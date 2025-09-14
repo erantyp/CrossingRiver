@@ -3,513 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>강건너기 v1.0 (기준 스냅샷)</title>
+  <title>강건너기 v1.0-light</title>
   <style>
     :root {
-      --bg1: #1b2735;
-      --bg2: #090a0f;
-      --river: #3aa6d0;
-      --bank: #e9efe6;
-      --ink: #101318;
-      --accent: #6fe4ff;
-      --boat: #ffe08a;
-      --shadow: rgba(0,0,0,.25);
+      --bg1:#eff5ff; --ink:#0b1020; --accent:#2d7df6;
+      --river:#9edbff; --bank:#ffffff; --boat:#ffe08a; --muted:#6b7a90;
     }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-      color: var(--ink);
-      background: linear-gradient(135deg, var(--bg1), var(--bg2));
-      overflow: hidden;
-    }
-    .wrap {
-      position: relative;
-      height: 100%;
-      display: grid;
-      grid-template-columns: 1fr min(54vmin, 680px) 1fr;
-      grid-template-rows: 80px 1fr 120px;
-      gap: 0;
-      align-items: stretch;
-      justify-items: stretch;
-    }
-    header {
-      grid-column: 1/4;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px; color: white;
-    }
-    header .title { font-weight: 700; letter-spacing: .5px; }
-    header .meta { font-size: 14px; opacity: .9; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; color:var(--ink); background:linear-gradient(180deg,#f7fbff,#eaf3ff 60%, #e3f5ff); }
 
-    /* River vertical strip through center column */
-    .riverCol { grid-column: 2; grid-row: 1/4; position: relative; z-index: 0; }
-    .river {
-      position: absolute; inset: 0 35%;
-      background: linear-gradient(0deg, #2b9ecb, #5bc8f0);
-      box-shadow: inset 0 0 40px rgba(0,0,0,.35);
-      border-left: 6px solid rgba(255,255,255,.25);
-      border-right: 6px solid rgba(0,0,0,.15);
-      z-index: 0;
-      pointer-events: none;
-    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .title { font-weight:800; font-size:20px; }
+    .hint { color:var(--muted); font-size:14px; }
 
-    /* Banks (left/right) */
-    .bank {
-      display: grid;
-      place-items: center;
-      padding: 12px 8px;
-    }
-    .bank.left { grid-column: 1; grid-row: 2; }
-    .bank.right { grid-column: 3; grid-row: 2; }
-    .bank .pad {
-      width: 92%; height: 92%;
-      background: var(--bank);
-      border-radius: 20px;
-      box-shadow: 0 10px 30px var(--shadow), inset 0 2px 0 rgba(255,255,255,.6);
-      display: grid; grid-auto-rows: minmax(44px, auto);
-      align-content: start;
-      gap: 8px; padding: 12px;
-      position: relative; z-index: 2;
-    }
-    .dockLabel {
-      text-align: center; font-weight: 700; color: #445; margin-bottom: 6px;
-    }
+    .board { display:grid; grid-template-columns: 1fr 200px 1fr; gap:12px; margin-top:12px; align-items:stretch; }
+    .bank { background:var(--bank); border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.08); padding:12px; }
+    .bank h3 { margin:0 0 8px; font-size:14px; color:#3a4862; }
 
-    /* Boat */
-    .boat {
-      position: absolute;
-      left: 50%; transform: translateX(-50%);
-      bottom: 18%;
-      width: min(40vmin, 480px);
-      height: min(14vmin, 160px);
-      border-radius: 24px;
-      background: var(--boat);
-      box-shadow: 0 10px 30px var(--shadow), inset 0 -10px 0 rgba(0,0,0,.08);
-      display: grid; grid-template-rows: 32px 1fr;
-      cursor: grab;
-      z-index: 3;
-    }
-    .boat.dragging { opacity: .9; cursor: grabbing; scale: 1.02; }
-    .sail {
-      height: 32px; display: flex; align-items: center; justify-content: center;
-      font-size: 20px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.12));
-    }
-    .hold {
-      display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-      align-items: center; justify-items: center; padding: 6px;
-      gap: 6px;
-    }
+    .river { background:var(--river); border-radius:16px; box-shadow:inset 0 0 20px rgba(0,0,0,.12); display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:12px; }
+    .boat { margin: 8px 0; width: 100%; min-height: 88px; background:var(--boat); border-radius:16px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 20px rgba(0,0,0,.15) inset; font-weight:700; }
+    .boat .cap { font-size:12px; color:#5a4b19; }
 
-    /* Tokens */
-    .token {
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 28px; line-height: 1; padding: 8px 10px; gap: 6px;
-      background: white; border-radius: 14px; box-shadow: 0 4px 12px var(--shadow);
-      user-select: none; -webkit-user-drag: none;
-      border: 2px solid rgba(0,0,0,.08);
-    }
-    .token.small { font-size: 22px; transform: translateY(1px); }
-    .token .lbl { font-size: 12px; color: #445; font-weight: 700; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; }
+    .token { display:inline-flex; align-items:center; gap:6px; padding:8px 10px; background:#fff; border:2px solid #e8eef9; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,.06); cursor:pointer; }
+    .token.small { font-size:14px; }
+    .token .e { font-size:22px; line-height:1; }
+    .token .lbl { font-size:12px; font-weight:800; color:#3b4a6a; }
 
-    .row { display: grid; grid-auto-flow: column; gap: 8px; align-items: center; }
+    .hud { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; }
+    .left { text-align:left; }
+    .right { text-align:right; }
 
-    .hud {
-      grid-column: 1/4; grid-row: 3;
-      display: grid; grid-template-columns: 1fr max-content 1fr; align-items: center;
-      color: #dff7ff; padding: 10px 16px 22px;
-      position: relative; z-index: 5;
-    }
-    .hud .status { font-weight: 700; }
-    .hud .controls { display: flex; gap: 8px; }
-    button { border: 0; background: #00bcd4; color: #042028; padding: 10px 14px; border-radius: 12px; font-weight: 800; box-shadow: 0 8px 16px rgba(0,0,0,.2); }
-    button.secondary { background: #79e2f2; }
-    button.ghost { background: transparent; color: #dff7ff; border: 2px solid rgba(255,255,255,.4); }
+    button { border:0; background:var(--accent); color:#fff; padding:10px 12px; border-radius:10px; font-weight:800; box-shadow:0 6px 16px rgba(45,125,246,.3); }
+    button.ghost { background:transparent; color:#2d7df6; border:2px solid #bcd3ff; box-shadow:none; }
 
-    .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; background: rgba(0,0,0,.8); color: white; padding: 10px 12px; border-radius: 10px; display: none; }
-    .toast.show { display: inline-block; }
-
-    .stageTag { color: #bff2ff; font-weight: 800; }
+    .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:16px; background:#111b; color:#fff; padding:8px 10px; border-radius:10px; display:none; }
+    .toast.show { display:block; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <div class="title">강건너기 v1.0 <span class="stageTag" id="stageTag"></span></div>
-      <div class="meta" id="meta">드래그로 배 이동(둑↔둑) • 치트키: ` 또는 ₩ + Enter</div>
+      <div class="title">강건너기 v1.0-light <span id="stageTag" style="color:#2d7df6"></span></div>
+      <div class="hint">클릭으로 탑승/하선 • Move로 배 이동 • 치트키: ` 또는 ₩ + Enter (또는 백틱 2번)</div>
     </header>
 
-    <div class="riverCol">
-      <div class="river"></div>
-      <div class="boat" id="boat" draggable="true" aria-label="boat">
-        <div class="sail">⛵️</div>
-        <div class="hold" id="boatHold"></div>
+    <div class="board">
+      <div class="bank">
+        <h3>왼쪽 둑</h3>
+        <div id="leftRows" class="row"></div>
       </div>
-    </div>
-
-    <div class="bank left">
-      <div class="pad">
-        <div class="dockLabel">왼쪽 둑</div>
-        <div id="leftRows"></div>
+      <div class="river">
+        <div style="font-size:20px">⛵️</div>
+        <div class="boat">
+          <div id="boatHold" class="row"></div>
+        </div>
+        <div class="cap">Boat capacity: <b id="capView">-</b></div>
       </div>
-    </div>
-    <div class="bank right">
-      <div class="pad">
-        <div class="dockLabel">오른쪽 둑</div>
-        <div id="rightRows"></div>
+      <div class="bank">
+        <h3>오른쪽 둑</h3>
+        <div id="rightRows" class="row"></div>
       </div>
     </div>
 
     <div class="hud">
-      <div class="status" id="status">준비 완료</div>
-      <div class="controls">
+      <div id="status" class="left">Ready</div>
+      <div class="right">
         <button class="ghost" id="btnReset">Reset</button>
-        <button class="secondary" id="btnLoad">Stage 재불러오기</button>
-        <button id="btnMove">승객 이동(둑⇄배)</button>
+        <button class="ghost" id="btnLoad">Reload Stage</button>
+        <button id="btnMove">Move (둑⇄둑)</button>
+        <button class="ghost" id="btnCheat">Cheat</button>
       </div>
-      <div style="text-align:right; font-size:14px; opacity:.9">Boat capacity: <b id="capView">-</b></div>
     </div>
-
-    <div class="toast" id="toast"></div>
   </div>
 
-  <script>
-    /*************************
-     * v1.0 기준 스냅샷 설정 *
-     *************************/
-    // 스테이지 구성 요약 (메모 기준)
-    // - Stage5: 배 용량 4
-    // - 치트키: ` 또는 ₩ + Enter → 강제 성공
-    // - 드래그로 배를 둑↔둑 이동(배 위치만 드래그)
-    // - 이모지 매핑: A=👾, B=👽, 선교사=🧑‍🦳, 쥐=🐭 (mouse vs M* 충돌 가능성 메모)
-    // - Stage3: 엘프/좀비/마법사 (두목/부하 크기 차이) → 크기 표시는 small 클래스로 대략 반영
-    // - Stage5: 코끼리/호랑이 규칙은 "배 안에서만" 충돌 체크
+  <div id="toast" class="toast"></div>
 
+  <script>
+    // ---------- Data ----------
     const STAGES = [
-      {
-        id: 1,
-        title: "Stage 1 — Wolf, Sheep & Cabbage",
-        boatCap: 2,
-        tokens: [
-          t("Farmer", "👨‍🌾"),
-          t("Wolf", "🐺"),
-          t("Sheep", "🐑"),
-          t("Cabbage", "🥬")
-        ],
-        rule({left, right, boat, where}){
-          // 실패 조건: Farmer 없는 곳에서 Wolf+Sheep 단둘 or Sheep+Cabbage 단둘
-          const checkSide = (arr)=>{
-            const has = (name) => arr.some(x=>x.name===name);
-            const count = (name) => arr.filter(x=>x.name===name).length;
-            const noFarmer = !has("Farmer");
-            if(noFarmer){
-              if(has("Wolf") && has("Sheep") && count("Wolf")+count("Sheep")===arr.length) return "늑대가 양을 먹었어요!";
-              if(has("Sheep") && has("Cabbage") && count("Sheep")+count("Cabbage")===arr.length) return "양이 양배추를 먹었어요!";
-            }
-            return null;
-          }
-          return checkSide(left) || checkSide(right) || null;
-        },
+      { id:1, title:"1단계 — 늑대, 양, 양배추", boatCap:2,
+        tokens:[ t('Farmer','👨‍🌾'), t('Wolf','🐺'), t('Sheep','🐑'), t('Cabbage','🥬') ],
+        rule({left,right}){
+          const bad=(arr)=>{const H=n=>arr.some(x=>x.name===n); const C=n=>arr.filter(x=>x.name===n).length; const noFarmer=!H('Farmer'); if(!noFarmer) return null; if(H('Wolf')&&H('Sheep')&&C('Wolf')+C('Sheep')===arr.length) return '늑대가 양을 먹었어요!'; if(H('Sheep')&&H('Cabbage')&&C('Sheep')+C('Cabbage')===arr.length) return '양이 양배추를 먹었어요!'; return null; };
+          return bad(left)||bad(right)||null; }
       },
-      {
-        id: 2,
-        title: "Stage 2 — Missionaries & Vampires",
-        boatCap: 2,
-        tokens: [
-          t("Missionary", "🧑‍🦳"), t("Missionary", "🧑‍🦳"), t("Missionary", "🧑‍🦳"),
-          t("Vampire", "🧛"), t("Vampire", "🧛"), t("Vampire", "🧛")
-        ],
-        rule({left, right}){
-          // 어느 쪽이든 Missionary > 0 일 때 Vampires > Missionaries 이면 실패
-          const bad = (arr) => {
-            const m = arr.filter(x=>x.name==="Missionary").length;
-            const v = arr.filter(x=>x.name==="Vampire").length;
-            return m>0 && v>m ? "선교사가 뱀파이어에게 밀려요!" : null;
-          }
-          return bad(left) || bad(right) || null;
-        },
+      { id:2, title:"2단계 — 선교사와 뱀파이어", boatCap:2,
+        tokens:[ t('Missionary','🧑‍🦳'),t('Missionary','🧑‍🦳'),t('Missionary','🧑‍🦳'), t('Vampire','🧛'),t('Vampire','🧛'),t('Vampire','🧛') ],
+        rule({left,right}){ const bad=(arr)=>{const m=arr.filter(x=>x.name==='Missionary').length; const v=arr.filter(x=>x.name==='Vampire').length; return m>0 && v>m ? '선교사가 뱀파이어에게 밀려요!' : null;}; return bad(left)||bad(right)||null; }
       },
-      {
-        id: 3,
-        title: "Stage 3 — Elf, Zombie & Wizard (Boss/Minion)",
-        boatCap: 2,
-        tokens: [
-          t("Elf", "🧝"),
-          t("Zombie", "🧟"), t("Zombie-minion", "🧟", true),
-          t("Wizard", "🧙"), t("Wizard-minion", "🧙", true)
-        ],
-        rule(){
-          // v1.0: 특별한 금기 규칙 없음 (후속 버전에서 보스/부하 차등 규칙 확장 예정)
-          return null;
-        },
+      { id:3, title:"3단계 — 엘프/좀비/마법사", boatCap:2,
+        tokens:[ t('Elf','🧝'), t('Zombie','🧟'), t('Zombie-minion','🧟',true), t('Wizard','🧙'), t('Wizard-minion','🧙',true) ],
+        rule(){ return null; }
       },
-      {
-        id: 4,
-        title: "Stage 4 — Alien caretakers & Lions",
-        boatCap: 3,
-        tokens: [
-          t("A", "👾"), t("B", "👽"),
-          t("Lion", "🦁"), t("Lion-cub", "🦁", true)
-        ],
-        rule(){
-          // v1.0: 충돌 규칙 없음 (후속에서 사육사/사자 세부 규칙 변경 예정)
-          return null;
-        },
+      { id:4, title:"4단계 — 외계인! 사육사와 사자", boatCap:3,
+        tokens:[ t('A','👾'), t('B','👽'), t('Lion','🦁'), t('Lion-cub','🦁',true) ],
+        rule(){ return null; }
       },
-      {
-        id: 5,
-        title: "Stage 5 — Trainer & Animals (Elephant/Tiger rule in boat only)",
-        boatCap: 4, // 중요: v1.0 명세
-        tokens: [
-          t("Trainer", "🧑‍🏫"),
-          t("Elephant", "🐘"),
-          t("Tiger", "🐅"),
-          t("Mouse", "🐭")
-        ],
-        rule({boat}){
-          // 코끼리/호랑이 규칙은 "배 안에서만" 체크
-          const has = (name)=> boat.some(x=>x.name===name);
-          if(has("Elephant") && has("Tiger") && !has("Trainer")){
-            return "배 안에서 코끼리와 호랑이는 조련사 없이 탈 수 없어요!";
-          }
-          return null;
-        },
-      },
+      { id:5, title:"5단계 — 조련사와 동물들", boatCap:4,
+        tokens:[ t('Trainer','🧑‍🏫'), t('Elephant','🐘'), t('Tiger','🐅'), t('Mouse','🐭') ],
+        rule({boat}){ const H=n=>boat.some(x=>x.name===n); if(H('Elephant')&&H('Tiger')&&!H('Trainer')) return '배 안에서 코끼리와 호랑이는 조련사 없이 탈 수 없어요!'; return null; }
+      }
     ];
 
-    function t(name, emoji, small=false){
-      return { id: uid(), name, emoji, small };
-    }
+    function t(name,emoji,small=false){ return { id:uid(), name, emoji, small }; }
 
-    // --- State ---
-    let state = {
-      stageIdx: 0,
-      where: new Map(), // tokenId -> 'left' | 'right' | 'boat'
-      boatSide: 'left',
-    };
+    // ---------- State & Elements ----------
+    const $ = s=>document.querySelector(s);
+    const leftRows = $('#leftRows');
+    const rightRows = $('#rightRows');
+    const boatHold = $('#boatHold');
+    const status = $('#status');
+    const stageTag = $('#stageTag');
+    const capView = $('#capView');
+    const toastEl = $('#toast');
 
-    const el = (sel)=>document.querySelector(sel);
-    const leftRows = el('#leftRows');
-    const rightRows = el('#rightRows');
-    const boatHold = el('#boatHold');
-    const boat = el('#boat');
-    const status = el('#status');
-    const stageTag = el('#stageTag');
-    const capView = el('#capView');
+    let state = { stageIdx:0, where:new Map(), boatSide:'left' };
 
-    // --- Init ---
-    loadStage(0);
-    bindUI();
-    // allow HTML5 drag to fire consistently
-    document.addEventListener('dragover', (e)=> e.preventDefault());
-    document.addEventListener('drop', (e)=> e.preventDefault());
+    // ---------- Init ----------
+    init();
+    function init(){ loadStage(0); bindUI(); }
 
     function loadStage(idx){
-      state.stageIdx = idx;
-      const stage = STAGES[idx];
-      state.where = new Map();
-      state.boatSide = 'left';
-      stage.tokens.forEach(tok=>state.where.set(tok.id, 'left'));
-      render();
-      toast(`Loaded: ${stage.title}`);
+      state.stageIdx = idx; state.where = new Map(); state.boatSide='left';
+      const s = STAGES[idx];
+      s.tokens.forEach(tok=> state.where.set(tok.id,'left'));
+      render(); toast(`Loaded: ${s.title}`);
     }
 
-    function render(){
-      const stage = STAGES[state.stageIdx];
-      stageTag.textContent = `· ${stage.title}`;
-      capView.textContent = stage.boatCap;
+    function bindUI(){
+      $('#btnReset').addEventListener('click', ()=> loadStage(state.stageIdx));
+      $('#btnLoad').addEventListener('click', ()=> loadStage(state.stageIdx));
+      $('#btnMove').addEventListener('click', trySail);
+      $('#btnCheat').addEventListener('click', forceClear);
 
-      leftRows.innerHTML = '';
-      rightRows.innerHTML = '';
-      boatHold.innerHTML = '';
-
-      // Pack tokens by location
-      const loc = { left: [], right: [], boat: [] };
-      stage.tokens.forEach(tok=>{
-        loc[state.where.get(tok.id)].push(tok);
+      // Robust cheat: backquote immediately + Enter, or double-backquote within 700ms, or with modifiers
+      let armed=false, last=0;
+      window.addEventListener('keydown', (e)=>{
+        const isBack = (e.key==='`'||e.key==='~'||e.code==='Backquote'||e.key==='₩');
+        if(isBack && (e.ctrlKey||e.metaKey||e.altKey||e.shiftKey)) return void forceClear();
+        if(isBack){ const now=Date.now(); if(now-last<700) return void forceClear(); armed=true; last=now; return; }
+        if(armed && e.key==='Enter'){ armed=false; return void forceClear(); }
+        armed=false;
       });
+    }
 
-      const makeRow = (arr, container)=>{
-        const row = document.createElement('div');
-        row.className = 'row';
-        arr.forEach(tok=>row.appendChild(renderToken(tok)));
-        container.appendChild(row);
-      };
+    // ---------- Render & Helpers ----------
+    function render(){
+      const s = STAGES[state.stageIdx];
+      stageTag.textContent = `· ${s.title}`; capView.textContent = s.boatCap;
+      leftRows.innerHTML=''; rightRows.innerHTML=''; boatHold.innerHTML='';
 
-      if(loc.left.length) makeRow(loc.left, leftRows);
-      if(loc.right.length) makeRow(loc.right, rightRows);
-      if(loc.boat.length) makeRow(loc.boat, boatHold);
-
-      // Position boat to side
-      const river = document.querySelector('.riverCol');
-      const rect = river.getBoundingClientRect();
-      const leftX = rect.left + rect.width*0.25;
-      const rightX = rect.left + rect.width*0.75;
-      const x = state.boatSide==='left' ? leftX : rightX;
-      boat.style.left = `${x - rect.left}px`;
-
+      const loc={left:[], right:[], boat:[]};
+      s.tokens.forEach(tok=>{ const w=state.where.get(tok.id)||'left'; state.where.set(tok.id,w); loc[w].push(tok); });
+      if(loc.left.length) leftRows.appendChild(makeRow(loc.left));
+      if(loc.right.length) rightRows.appendChild(makeRow(loc.right));
+      if(loc.boat.length) boatHold.appendChild(makeRow(loc.boat));
       updateStatus();
     }
 
+    function makeRow(arr){ const row=document.createElement('div'); row.className='row'; arr.forEach(tok=> row.appendChild(renderToken(tok))); return row; }
+
     function renderToken(tok){
-      const d = document.createElement('div');
-      d.className = 'token' + (tok.small? ' small':'');
-      d.dataset.id = tok.id;
-      d.title = tok.name;
-      d.innerHTML = `<span class="e">${tok.emoji}</span> <span class="lbl">${tok.name}</span>`;
-      d.addEventListener('click', ()=>onTokenClick(tok));
+      const d=document.createElement('div'); d.className='token'+(tok.small?' small':''); d.dataset.id=tok.id; d.title=tok.name;
+      d.innerHTML=`<span class="e">${tok.emoji}</span><span class="lbl">${tok.name}</span>`;
+      d.addEventListener('click', ()=> onTokenClick(tok));
       return d;
     }
 
     function onTokenClick(tok){
-      // 승객 이동: 현재 배가 있는 둑에 있는 승객만 배로, 배 승객은 해당 둑으로
-      const stage = STAGES[state.stageIdx];
-      const loc = state.where.get(tok.id);
-      if(loc==='boat'){
-        // 내리기 → 배가 있는 둑으로
-        state.where.set(tok.id, state.boatSide);
-      } else if(loc===state.boatSide){
-        // 타기
-        const boatNow = tokensIn('boat').length;
-        if(boatNow < stage.boatCap){
-          state.where.set(tok.id, 'boat');
-        } else {
-          toast('배가 가득 찼어요');
-        }
-      } else {
-        toast('배가 있는 쪽에서만 승선 가능');
-      }
+      const s=STAGES[state.stageIdx]; const loc=state.where.get(tok.id);
+      if(loc==='boat'){ state.where.set(tok.id, state.boatSide); }
+      else if(loc===state.boatSide){ if(tokensIn('boat').length < s.boatCap) state.where.set(tok.id,'boat'); else toast('배가 가득 찼어요'); }
+      else { toast('배가 있는 쪽에서만 승선 가능'); }
       render();
     }
 
-    function tokensIn(side){
-      const stage = STAGES[state.stageIdx];
-      return stage.tokens.filter(t=>state.where.get(t.id)===side);
-    }
-
-    function updateStatus(msg){
-      if(msg){ status.textContent = msg; return; }
-      const stage = STAGES[state.stageIdx];
-      const allRight = stage.tokens.every(tok=>state.where.get(tok.id)==='right');
-      if(allRight){
-        status.textContent = `🎉 Stage ${stage.id} Clear!`;
-      } else {
-        status.textContent = `Boat on ${state.boatSide.toUpperCase()} — 승객을 태우고 배를 옮겨 보세요`;
-      }
-    }
+    function tokensIn(side){ const s=STAGES[state.stageIdx]; return s.tokens.filter(t=> state.where.get(t.id)===side); }
 
     function trySail(){
-      // 배 이동(둑↔둑) 시 규칙 검사
-      const stage = STAGES[state.stageIdx];
-      // 최소 1명 탑승 필요 조건은 v1.0에서 자유 (원한다면 아래 주석 해제)
-      // if(tokensIn('boat').length===0){ toast('빈 배는 이동 불가'); return; }
-
-      // 이동
-      state.boatSide = state.boatSide==='left' ? 'right' : 'left';
-
-      // 하선 없이 둑 규칙/보트 규칙 체크
-      const err = (stage.rule||(()=>null))({
-        left: tokensIn('left'),
-        right: tokensIn('right'),
-        boat: tokensIn('boat'),
-        where: state.where
-      });
-      if(err){
-        // 롤백
-        state.boatSide = state.boatSide==='left' ? 'right' : 'left';
-        toast(err);
-        render();
-        return;
-      }
+      const s=STAGES[state.stageIdx];
+      // toggle side
+      state.boatSide = (state.boatSide==='left') ? 'right' : 'left';
+      const err = (s.rule||(()=>null))({ left:tokensIn('left'), right:tokensIn('right'), boat:tokensIn('boat'), where:state.where });
+      if(err){ state.boatSide = (state.boatSide==='left') ? 'right' : 'left'; toast(err); return render(); }
       render();
-
-      // 클리어 체크
-      const allRight = stage.tokens.every(tok=>state.where.get(tok.id)==='right');
-      if(allRight){
-        toast(`Stage ${stage.id} 성공!`);
-        // 다음 스테이지 자동 로드 (v1.0 유지)
-        if(state.stageIdx < STAGES.length-1){
-          setTimeout(()=>loadStage(state.stageIdx+1), 650);
-        } else {
-          // v1.0: 최종 성공화면 집계는 이후 버전 예정
-          setTimeout(()=>toast('모든 스테이지 완료! (v1.0)'), 800);
-        }
-      }
+      // clear check
+      const allRight = s.tokens.every(tok=> state.where.get(tok.id)==='right');
+      if(allRight){ toast(`Stage ${s.id} 성공!`); if(state.stageIdx<STAGES.length-1){ setTimeout(()=>loadStage(state.stageIdx+1),600); } else { setTimeout(()=>toast('모든 스테이지 완료! v1.0-light'), 800); } }
     }
 
-    function bindUI(){
-      el('#btnReset').addEventListener('click', ()=>loadStage(state.stageIdx));
-      el('#btnLoad').addEventListener('click', ()=>loadStage(state.stageIdx));
-      el('#btnMove').addEventListener('click', trySail);
+    function updateStatus(){ const s=STAGES[state.stageIdx]; const allRight = s.tokens.every(tok=> state.where.get(tok.id)==='right'); status.textContent = allRight ? `🎉 Stage ${s.id} Clear` : `Boat on ${state.boatSide.toUpperCase()} — click tokens, then Move`; }
 
-      // Boat drag (둑↔둑)
-      let drag = { active:false, sx:0, ox:0 };
-      boat.addEventListener('dragstart', (e)=>{
-        drag.active = true; boat.classList.add('dragging');
-        drag.sx = e.clientX; drag.ox = boat.offsetLeft;
-        if(e.dataTransfer){ e.dataTransfer.effectAllowed = 'move'; }
-        // firefox 드래그 미리보기 방지
-        const img = new Image(); img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
-        e.dataTransfer && e.dataTransfer.setDragImage(img, 0, 0);
-      });
-        drag.sx = e.clientX; drag.ox = boat.offsetLeft;
-        // firefox 드래그 미리보기 방지
-        const img = new Image(); img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>';
-        e.dataTransfer.setDragImage(img, 0, 0);
-      });
-      boat.addEventListener('dragend', (e)=>{
-        boat.classList.remove('dragging');
-        drag.active=false;
-        // 중앙 기준 좌/우로 스냅 → 이동 시도
-        const river = document.querySelector('.riverCol');
-        const rect = river.getBoundingClientRect();
-        const mid = rect.width/2;
-        const x = e.clientX - rect.left;
-        const target = (x < mid) ? 'left' : 'right';
-        const changed = (target!==state.boatSide);
-        if(changed){
-          trySail();
-        } else {
-          render();
-        }
-      });
-
-      // 키보드 치트키: ` 또는 ₩ + Enter
-      let backtickArmed = false;
-      window.addEventListener('keydown', (e)=>{
-        if(e.key==='`' || e.key==='~' || e.code==='Backquote' || e.key==='₩'){
-          backtickArmed = true;
-        } else if(backtickArmed && (e.key==='Enter')){
-          backtickArmed = false;
-          forceClear();
-        } else {
-          backtickArmed = false;
-        }
-      });
-
-      // 더블클릭으로도 배 이동(드래그 안될 때 대비)
-      boat.addEventListener('dblclick', ()=> trySail());
-    }
-
-    function forceClear(){
-      const stage = STAGES[state.stageIdx];
-      stage.tokens.forEach(tok=>state.where.set(tok.id, 'right'));
-      render();
-      toast(`치트키로 Stage ${stage.id} 클리어 처리됨`);
-      if(state.stageIdx < STAGES.length-1){
-        setTimeout(()=>loadStage(state.stageIdx+1), 500);
-      } else {
-        setTimeout(()=>toast('모든 스테이지 완료! (v1.0, 종합기록은 차기버전)'), 700);
-      }
-    }
+    function forceClear(){ const s=STAGES[state.stageIdx]; s.tokens.forEach(tok=> state.where.set(tok.id,'right')); render(); toast(`치트로 Stage ${s.id} 클리어`); if(state.stageIdx<STAGES.length-1){ setTimeout(()=>loadStage(state.stageIdx+1),500);} else { setTimeout(()=>toast('모든 스테이지 완료! v1.0-light'),700);} }
 
     function uid(){ return Math.random().toString(36).slice(2,9); }
-
-    function toast(msg){
-      const t = el('#toast');
-      t.textContent = msg; t.classList.add('show');
-      clearTimeout(toast._to);
-      toast._to = setTimeout(()=>t.classList.remove('show'), 1600);
-    }
+    function toast(m){ toastEl.textContent=m; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.classList.remove('show'),1500); }
   </script>
 </body>
 </html>
