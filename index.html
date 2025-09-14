@@ -172,7 +172,7 @@ function render(){
     const pos=state.positions[name]; const el=makeToken(name);
     if(pos==="L")leftDock.appendChild(el);
     else if(pos==="R")rightDock.appendChild(el);
-    else if(pos==="BOAT"){(slotA.childElementCount===0?slotA:slotB).appendChild(el);}
+    else if(pos==="BOAT"){(slotA.childElementCount===0?slotA:slotB).appendChild(el);} 
   }
   $("#stageName").textContent=st.name;
   $("#ruleText").textContent=st.ruleText;
@@ -270,10 +270,10 @@ function startStage(i){
   state.boatSide="L"; state.moving=false; boatWrap.style.left=boatLeftPercent("L")+"%";
   hideOverlay(); startTimer(); render();
 }
-function enterGame(){$("#menu").classList.add("hidden");$("#game").classList.remove("hidden");startStage(0);}
-function enterMenu(){$("#menu").classList.remove("hidden");$("#game").classList.add("hidden");clearInterval(state.timerId);}
-function startTimer(){state.startTs=Date.now();clearInterval(state.timerId);state.timerId=setInterval(()=>$("#elapsed").textContent=formatTime(Date.now()-state.startTs),200);}
-function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${(s%60).toString().padStart(2,"0")}`}
+function enterGame(){$("#menu").classList.add("hidden");$("#game").classList.remove("hidden");startStage(0);} 
+function enterMenu(){$("#menu").classList.remove("hidden");$("#game").classList.add("hidden");clearInterval(state.timerId);} 
+function startTimer(){state.startTs=Date.now();clearInterval(state.timerId);state.timerId=setInterval(()=>$("#elapsed").textContent=formatTime(Date.now()-state.startTs),200);} 
+function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${(s%60).toString().padStart(2,"0")}`} 
 
 $("#startBtn").addEventListener("click",enterGame);
 $("#rulesBtn").addEventListener("click",()=>$("#rulesModal").style.display="flex");
@@ -285,8 +285,8 @@ replayBtn.addEventListener("click",()=>{hideOverlay();startStage(state.stageInde
 homeBtn.addEventListener("click",()=>{hideOverlay();enterMenu()});
 
 /* 개발자 치트키
-   - ₩ + ←/→ : 이전/다음 스테이지 바로 이동
-   - ₩ + Enter : 현재 스테이지 강제 성공 처리
+   - ₩ 또는 ` + ←/→ : 이전/다음 스테이지 바로 이동
+   - ₩ 또는 ` + Enter : 현재 스테이지 강제 성공 처리
 */
 function forceClearStage(){
   const st=STAGES[state.stageIndex];
@@ -294,12 +294,12 @@ function forceClearStage(){
   render();
 }
 document.addEventListener("keydown",e=>{
-  if(e.key==="₩") state.devCheat=true;
+  if(e.key==="₩" || e.key==="`" || e.code==="Backquote") state.devCheat=true;
   if(state.devCheat && e.key==="ArrowRight" && state.stageIndex<STAGES.length-1) startStage(state.stageIndex+1);
   if(state.devCheat && e.key==="ArrowLeft"  && state.stageIndex>0) startStage(state.stageIndex-1);
   if(state.devCheat && (e.key==="Enter" || e.code==="Enter")) { forceClearStage(); }
 });
-document.addEventListener("keyup",e=>{if(e.key==="₩") state.devCheat=false});
+document.addEventListener("keyup",e=>{if(e.key==="₩" || e.key==="`" || e.code==="Backquote") state.devCheat=false});
 </script>
 </body>
 </html>
