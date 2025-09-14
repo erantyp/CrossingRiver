@@ -165,6 +165,29 @@ function buildBoatSlots(n){
 }
 function setBoatSize(cap){ document.querySelector('#boat')?.classList.toggle('big', cap>=4); }
 
+// 메뉴 클릭 씹힘 방지: 메뉴 활성 시 전역 클릭 차단 해제/설정
+(function(){
+  // 초기에는 메뉴 활성 상태로
+  document.addEventListener('DOMContentLoaded', function(){
+    document.body.classList.add('menu-active');
+  });
+  // enterGame / enterMenu 를 감싸서 menu-active 토글
+  const _enterGame = window.enterGame;
+  if(typeof _enterGame === 'function'){
+    window.enterGame = function(){
+      document.body.classList.remove('menu-active');
+      return _enterGame.apply(this, arguments);
+    }
+  }
+  const _enterMenu = window.enterMenu;
+  if(typeof _enterMenu === 'function'){
+    window.enterMenu = function(){
+      document.body.classList.add('menu-active');
+      return _enterMenu.apply(this, arguments);
+    }
+  }
+})();
+
 </script>
 </body>
 </html>
