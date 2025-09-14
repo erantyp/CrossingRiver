@@ -1,205 +1,305 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>강건너기 v1.0-light</title>
-  <style>
-    :root {
-      --bg1:#eff5ff; --ink:#0b1020; --accent:#2d7df6;
-      --river:#9edbff; --bank:#ffffff; --boat:#ffe08a; --muted:#6b7a90;
-    }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", sans-serif; color:var(--ink); background:linear-gradient(180deg,#f7fbff,#eaf3ff 60%, #e3f5ff); }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>강 건너기 퍼즐 ⛵ (Stages 1~5)</title>
+<style>
+  :root { --bg:#f4fbff; --ink:#1f2937; --accent:#0ea5e9; --card:#ffffffcc; }
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,sans-serif;background:var(--bg);color:var(--ink)}
+  .hidden{display:none!important}
+  .center-col{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+  .btn{padding:12px 18px;border-radius:14px;border:1px solid #dbe5ef;font-size:16px;font-weight:700;cursor:pointer;background:#fff;box-shadow:0 6px 14px rgba(0,0,0,.06);transition:.2s}
+  .btn.primary{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#fff;border:none}
+  .btn.next{background:linear-gradient(180deg,#34d399,#059669);color:#fff;border:none}
+  .container{max-width:1100px;margin:0 auto;padding:20px}
+  .hud{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:10px 0 18px}
+  .pill{padding:6px 10px;border-radius:999px;background:#eef6ff;color:#1d4ed8;border:1px solid #c7dbff;font-weight:700}
 
-    .wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
-    header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .title { font-weight:800; font-size:20px; }
-    .hint { color:var(--muted); font-size:14px; }
+  /* 보드 레이아웃 */
+  .board{position:relative;width:100%;height:540px;border-radius:18px;overflow:hidden;border:1px solid #e5e7eb;background:#bfe8ff}
+  .river{
+    position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);
+    width:50%; /* 강을 넓혀 배가 둑과 멀어지게 */
+    background:linear-gradient(180deg,#8dd7ff,#54b9f0 60%,#4aa8e0)
+  }
+  .bank{
+    position:absolute;top:0;bottom:0;width:25%; /* 둑을 살짝 줄임 */
+    display:flex;flex-direction:column;justify-content:flex-end;gap:8px;
+    padding:10px 12px 28px; /* 하단 패딩 늘려 살짝 띄움 */
+    background:linear-gradient(#cfe9a6,#a7d47d);z-index:1
+  }
+  .bank.left{left:0}.bank.right{right:0}
+  .bank-title{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-weight:800;background:#ffffffcc;padding:2px 10px;border-radius:999px}
+  .dock{display:flex;flex-wrap:wrap;gap:8px}
 
-    .board { display:grid; grid-template-columns: 1fr 200px 1fr; gap:12px; margin-top:12px; align-items:stretch; }
-    .bank { background:var(--bank); border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.08); padding:12px; }
-    .bank h3 { margin:0 0 8px; font-size:14px; color:#3a4862; }
+  .boat-wrap{
+    position:absolute;top:58%; /* 배를 조금 아래로 */
+    transform:translate(-50%,-50%);
+    transition:left 1.1s cubic-bezier(0.65,0,0.35,1);
+    z-index:2
+  }
+  .boat-wrap.moving{animation:bob .5s ease-in-out infinite alternate}
+  @keyframes bob{from{transform:translate(-50%,-50%) rotate(-1deg)}to{transform:translate(-50%,-52%) rotate(1deg)}}
 
-    .river { background:var(--river); border-radius:16px; box-shadow:inset 0 0 20px rgba(0,0,0,.12); display:flex; flex-direction:column; align-items:center; justify-content:space-between; padding:12px; }
-    .boat { margin: 8px 0; width: 100%; min-height: 88px; background:var(--boat); border-radius:16px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 20px rgba(0,0,0,.15) inset; font-weight:700; }
-    .boat .cap { font-size:12px; color:#5a4b19; }
+  .boat{position:relative;width:320px;max-width:80%;height:110px;background:#8b5a2b;border-radius:12px}
+  .slots{position:absolute;left:8px;right:8px;bottom:8px;height:88px;display:flex;gap:10px;justify-content:center;align-items:flex-end}
+  .slot{width:80px;height:80px;border:2px dashed #ffffff99;border-radius:12px;background:#ffffff22;display:flex;align-items:center;justify-content:center;color:#fff}
 
-    .row { display:flex; flex-wrap:wrap; gap:8px; }
-    .token { display:inline-flex; align-items:center; gap:6px; padding:8px 10px; background:#fff; border:2px solid #e8eef9; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,.06); cursor:pointer; }
-    .token.small { font-size:14px; }
-    .token .e { font-size:22px; line-height:1; }
-    .token .lbl { font-size:12px; font-weight:800; color:#3b4a6a; }
+  .token{width:80px;height:80px;border-radius:16px;background:var(--card);border:1px solid #e5e7eb;box-shadow:0 6px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:36px;cursor:grab}
 
-    .hud { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; }
-    .left { text-align:left; }
-    .right { text-align:right; }
+  .result{position:absolute;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
+  .result .card{background:#fff;border-radius:18px;padding:24px;width:min(560px,88vw);text-align:center}
 
-    button { border:0; background:var(--accent); color:#fff; padding:10px 12px; border-radius:10px; font-weight:800; box-shadow:0 6px 16px rgba(45,125,246,.3); }
-    button.ghost { background:transparent; color:#2d7df6; border:2px solid #bcd3ff; box-shadow:none; }
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal{background:#fff;border-radius:16px;padding:20px;max-width:600px}
 
-    .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:16px; background:#111b; color:#fff; padding:8px 10px; border-radius:10px; display:none; }
-    .toast.show { display:block; }
-  </style>
+  .times{margin:12px auto 0;max-width:420px;text-align:left}
+  .times .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb}
+  .times .row.total{font-weight:800}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="title">강건너기 v1.0-light <span id="stageTag" style="color:#2d7df6"></span></div>
-      <div class="hint">클릭으로 탑승/하선 • Move로 배 이동 • 치트키: ` 또는 ₩ + Enter (또는 백틱 2번)</div>
-    </header>
+<main id="menu" class="center-col">
+  <h1>강 건너기 퍼즐 ⛵</h1>
+  <button class="btn primary" id="startBtn">🚀 게임 시작</button>
+</main>
 
-    <div class="board">
-      <div class="bank">
-        <h3>왼쪽 둑</h3>
-        <div id="leftRows" class="row"></div>
-      </div>
-      <div class="river">
-        <div style="font-size:20px">⛵️</div>
-        <div class="boat">
-          <div id="boatHold" class="row"></div>
-        </div>
-        <div class="cap">Boat capacity: <b id="capView">-</b></div>
-      </div>
-      <div class="bank">
-        <h3>오른쪽 둑</h3>
-        <div id="rightRows" class="row"></div>
-      </div>
+<div id="rulesModal" class="modal-backdrop">
+  <div class="modal">
+    <h3>게임 규칙</h3>
+    <p id="ruleText"></p>
+    <div style="margin-top:14px;text-align:right">
+      <button class="btn primary" id="closeRules">닫기</button>
     </div>
+  </div>
+</div>
 
-    <div class="hud">
-      <div id="status" class="left">Ready</div>
-      <div class="right">
-        <button class="ghost" id="btnReset">Reset</button>
-        <button class="ghost" id="btnLoad">Reload Stage</button>
-        <button id="btnMove">Move (둑⇄둑)</button>
-        <button class="ghost" id="btnCheat">Cheat</button>
-      </div>
+<section id="game" class="container hidden">
+  <div class="hud">
+    <div class="left">
+      <span class="pill">스테이지: <b id="stageName"></b></span>
+      <span class="pill">보트 위치: <b id="boatSideLabel"></b></span>
+      <span class="pill">경과시간: <b id="elapsed">00:00</b></span>
+    </div>
+    <div class="right">
+      <button class="btn small" id="rulesBtn">📜 규칙</button>
+      <button class="btn small" id="resetBtn">↺ 리셋</button>
+      <button class="btn small primary" id="moveBtn">⛵ 이동</button>
     </div>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div class="board">
+    <div class="bank left"><div class="bank-title">왼쪽 둑</div><div class="dock" id="dock-left"></div></div>
+    <div class="river"></div>
+    <div class="boat-wrap" id="boatWrap"><div class="boat" id="boat"><div class="slots"><div class="slot" id="slotA"></div><div class="slot" id="slotB"></div></div></div></div>
+    <div class="bank right"><div class="bank-title">오른쪽 둑</div><div class="dock" id="dock-right"></div></div>
+    <div class="result" id="overlay">
+      <div class="card">
+        <h2 id="overlayTitle"></h2>
+        <p id="overlayMsg"></p>
+        <div id="finalTimes" class="times hidden"></div>
+        <p id="timeMsg"></p>
+        <button class="btn next" id="nextBtn">다음 스테이지</button>
+        <button class="btn primary" id="replayBtn">다시 도전</button>
+        <button class="btn" id="homeBtn">처음으로</button>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <script>
-    // ---------- Data ----------
-    const STAGES = [
-      { id:1, title:"1단계 — 늑대, 양, 양배추", boatCap:2,
-        tokens:[ t('Farmer','👨‍🌾'), t('Wolf','🐺'), t('Sheep','🐑'), t('Cabbage','🥬') ],
-        rule({left,right}){
-          const bad=(arr)=>{const H=n=>arr.some(x=>x.name===n); const C=n=>arr.filter(x=>x.name===n).length; const noFarmer=!H('Farmer'); if(!noFarmer) return null; if(H('Wolf')&&H('Sheep')&&C('Wolf')+C('Sheep')===arr.length) return '늑대가 양을 먹었어요!'; if(H('Sheep')&&H('Cabbage')&&C('Sheep')+C('Cabbage')===arr.length) return '양이 양배추를 먹었어요!'; return null; };
-          return bad(left)||bad(right)||null; }
-      },
-      { id:2, title:"2단계 — 선교사와 뱀파이어", boatCap:2,
-        tokens:[ t('Missionary','🧑‍🦳'),t('Missionary','🧑‍🦳'),t('Missionary','🧑‍🦳'), t('Vampire','🧛'),t('Vampire','🧛'),t('Vampire','🧛') ],
-        rule({left,right}){ const bad=(arr)=>{const m=arr.filter(x=>x.name==='Missionary').length; const v=arr.filter(x=>x.name==='Vampire').length; return m>0 && v>m ? '선교사가 뱀파이어에게 밀려요!' : null;}; return bad(left)||bad(right)||null; }
-      },
-      { id:3, title:"3단계 — 엘프/좀비/마법사", boatCap:2,
-        tokens:[ t('Elf','🧝'), t('Zombie','🧟'), t('Zombie-minion','🧟',true), t('Wizard','🧙'), t('Wizard-minion','🧙',true) ],
-        rule(){ return null; }
-      },
-      { id:4, title:"4단계 — 외계인! 사육사와 사자", boatCap:3,
-        tokens:[ t('A','👾'), t('B','👽'), t('Lion','🦁'), t('Lion-cub','🦁',true) ],
-        rule(){ return null; }
-      },
-      { id:5, title:"5단계 — 조련사와 동물들", boatCap:4,
-        tokens:[ t('Trainer','🧑‍🏫'), t('Elephant','🐘'), t('Tiger','🐅'), t('Mouse','🐭') ],
-        rule({boat}){ const H=n=>boat.some(x=>x.name===n); if(H('Elephant')&&H('Tiger')&&!H('Trainer')) return '배 안에서 코끼리와 호랑이는 조련사 없이 탈 수 없어요!'; return null; }
-      }
-    ];
+<script>
+const STAGES=[
+ {name:"1단계 · 늑대, 양 그리고 양배추",tokens:["person","wolf","goat","cabbage"],capacity:2,requiresPerson:true,
+  ruleText:"사람만 배의 노를 저을 수 있습니다. 사람이 없는 둑에서 늑대+양 또는 양+양배추가 남으면 게임 오버입니다.",
+  rules:(pos,side)=>{const b={L:[],R:[]};for(const t in pos){const s=pos[t]==="BOAT"?side:pos[t];b[s].push(t);}if(!b.L.includes("person")){if(b.L.includes("wolf")&&b.L.includes("goat"))return"왼쪽: 늑대가 양을 먹음";if(b.L.includes("goat")&&b.L.includes("cabbage"))return"왼쪽: 양이 양배추를 먹음";}if(!b.R.includes("person")){if(b.R.includes("wolf")&&b.R.includes("goat"))return"오른쪽: 늑대가 양을 먹음";if(b.R.includes("goat")&&b.R.includes("cabbage"))return"오른쪽: 양이 양배추를 먹음";}return null;}},
 
-    function t(name,emoji,small=false){ return { id:uid(), name, emoji, small }; }
+ {name:"2단계 · 선교사와 뱀파이어",tokens:["M1","M2","M3","V1","V2","V3"],capacity:2,requiresPerson:false,
+  ruleText:"선교사/뱀파이어 모두 배를 몰 수 있고, 배는 최대 2명까지 탑승 가능합니다. 어느 둑이든 선교사가 있고 뱀파이어가 선교사보다 많으면 게임 오버입니다.",
+  rules:(pos,side)=>{const c={L:{M:0,V:0},R:{M:0,V:0}};for(const t in pos){const s=pos[t]==="BOAT"?side:pos[t];if(t.startsWith("M"))c[s].M++;else c[s].V++;}for(const s of["L","R"])if(c[s].M>0&&c[s].V>c[s].M)return`${s==="L"?"왼쪽":"오른쪽"}: 뱀파이어가 선교사를 잡아먹음`;return null;}},
 
-    // ---------- State & Elements ----------
-    const $ = s=>document.querySelector(s);
-    const leftRows = $('#leftRows');
-    const rightRows = $('#rightRows');
-    const boatHold = $('#boatHold');
-    const status = $('#status');
-    const stageTag = $('#stageTag');
-    const capView = $('#capView');
-    const toastEl = $('#toast');
+ {name:"3단계 · 엘프·좀비·마법사",tokens:["ElfBoss","Elf","ZombieBoss","Zombie","WizardBoss","Wizard"],capacity:2,requiresPerson:false,
+  ruleText:"부하는 자기 두목이 있을 때만 안전합니다. 두목 없이 다른 두목과만 함께 있으면 위험합니다.",
+  rules:(pos,side)=>{const groups={"ElfBoss":"Elf","ZombieBoss":"Zombie","WizardBoss":"Wizard"};for(const s of["L","R"]){const here=Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const [boss,minion] of Object.entries(groups)){if(here.includes(minion)&&!here.includes(boss)){const otherBoss=Object.keys(groups).filter(b=>b!==boss&&here.includes(b));if(otherBoss.length)return`${s==="L"?"왼쪽":"오른쪽"}: ${minion}이 다른 두목과만 있어 위험!`;}}}return null;}},
 
-    let state = { stageIdx:0, where:new Map(), boatSide:'left' };
+ {name:"4단계 · 외계인! 사육사와 사자",tokens:["A","A1","A2","B","B1","B2","Keeper","Lion"],capacity:2,requiresPerson:false,
+  ruleText:"A/B 부모가 없으면 상대의 아이를 괴롭힙니다. 사자는 사육사가 없으면 위험합니다. 노는 A,B,Keeper만 가능합니다.",
+  rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const s of["L","R"]){const h=info(s);if(h.includes("A1")||h.includes("A2"))if(!h.includes("A")&&h.includes("B"))return`${s==="L"?"왼쪽":"오른쪽"}: B가 A의 아이를 괴롭힘`;if(h.includes("B1")||h.includes("B2"))if(!h.includes("B")&&h.includes("A"))return`${s==="L"?"왼쪽":"오른쪽"}: A가 B의 아이를 괴롭힘`;if(h.includes("Lion")&&!h.includes("Keeper"))return`${s==="L"?"왼쪽":"오른쪽"}: 사자가 날뜀`; }return null;}},
 
-    // ---------- Init ----------
-    init();
-    function init(){ loadStage(0); bindUI(); }
+ {name:"5단계 · 조련사와 동물들",tokens:["Trainer","Elephant","Tiger","Dog","Cat","Mouse"],capacity:4,requiresPerson:false,
+  ruleText:"배 안에서만 적용: 코끼리는 쥐 외 동물과 동승 불가, 호랑이+개가 함께 타면 다른 동물 동승 불가. 둑에서는 조련사가 없을 때 (코-호, 호-개, 개-고, 고-쥐, 쥐-코) 싸움.",
+  rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);
+    const boatMembers=Object.entries(pos).filter(([k,v])=>v==="BOAT").map(([k])=>k);
+    if(boatMembers.includes("Elephant") && boatMembers.some(x=>!["Elephant","Mouse"].includes(x))) return "배 안: 코끼리가 동승 불가 동물과 있음";
+    if(boatMembers.includes("Tiger") && boatMembers.includes("Dog") && boatMembers.length>2) return "배 안: 호랑이+개와 다른 동물 동승 불가";
+    for(const s of["L","R"]){const h=info(s),has=t=>h.includes(t);const pairs=[["Elephant","Tiger"],["Tiger","Dog"],["Dog","Cat"],["Cat","Mouse"],["Mouse","Elephant"]];for(const [a,b] of pairs){if(has(a)&&has(b)&&!has("Trainer"))return`${s==="L"?"왼쪽":"오른쪽"}: ${a}와 ${b}가 싸움`;}}
+    return null;}
+ }
+];
 
-    function loadStage(idx){
-      state.stageIdx = idx; state.where = new Map(); state.boatSide='left';
-      const s = STAGES[idx];
-      s.tokens.forEach(tok=> state.where.set(tok.id,'left'));
-      render(); toast(`Loaded: ${s.title}`);
+const $=s=>document.querySelector(s);
+let state={stageIndex:0,positions:{},boatSide:"L",moving:false,startTs:null,timerId:null,devCheat:false,stageTimes:Array(STAGES.length).fill(null)};
+const leftDock=$("#dock-left"),rightDock=$("#dock-right"),boatWrap=$("#boatWrap"),boat=$("#boat"),slotA=$("#slotA"),slotB=$("#slotB");
+
+/* 강 폭을 50%로 키웠으므로 보트 중앙을 강의 안쪽으로: 35% / 65% */
+function boatLeftPercent(s){return s==="L"?35:65}
+
+function emoji(name){
+  if(name==="Mouse")return"🐭"; /* 선교사(M*)보다 먼저 체크! */
+  if(name==="person")return"🧍";if(name==="wolf")return"🐺";if(name==="goat")return"🐑";if(name==="cabbage")return"🥬";
+  if(name.startsWith("M"))return"🧑‍🦳";if(name.startsWith("V"))return"🧛";
+  if(name.startsWith("Elf"))return"🧝";if(name.startsWith("Zombie"))return"🧟";if(name.startsWith("Wizard"))return"🧙";
+  if(name==="A"||name==="A1"||name==="A2")return"👾";if(name==="B"||name==="B1"||name==="B2")return"👽";
+  if(name==="Keeper")return"👨‍🌾";if(name==="Lion")return"🦁";
+  if(name==="Trainer")return"👨";if(name==="Elephant")return"🐘";if(name==="Tiger")return"🐅";if(name==="Dog")return"🐕";if(name==="Cat")return"🐈";
+  return name;
+}
+
+function makeToken(name){
+  const el=document.createElement("div");el.className="token";el.draggable=true;el.dataset.id=name;el.textContent=emoji(name);
+  if(name.includes("Boss")) el.style.fontSize="48px";             // stage3 두목 크게
+  if(["Elf","Zombie","Wizard"].includes(name)) el.style.fontSize="24px"; // stage3 조직원 작게
+  if(name==="A1"||name==="A2"||name==="B1"||name==="B2") el.style.fontSize="20px"; // stage4 자식 작게
+  el.addEventListener("dragstart",e=>{if(state.moving){e.preventDefault();return}e.dataTransfer.setData("text/plain",name)});
+  return el;
+}
+
+function clearSlots(){leftDock.replaceChildren();rightDock.replaceChildren();slotA.replaceChildren();slotB.replaceChildren();}
+function render(){
+  clearSlots();
+  const st=STAGES[state.stageIndex];
+  for(const name of st.tokens){
+    const pos=state.positions[name]; const el=makeToken(name);
+    if(pos==="L")leftDock.appendChild(el);
+    else if(pos==="R")rightDock.appendChild(el);
+    else if(pos==="BOAT"){(slotA.childElementCount===0?slotA:slotB).appendChild(el);}
+  }
+  $("#stageName").textContent=st.name;
+  $("#ruleText").textContent=st.ruleText;
+  $("#boatSideLabel").textContent=state.boatSide==="L"?"왼쪽":"오른쪽";
+  boatWrap.style.left=boatLeftPercent(state.boatSide)+"%";
+
+  const fail=st.rules(state.positions,state.boatSide);
+  if(fail) return showOverlay(false,fail);
+
+  if(Object.values(state.positions).every(v=>"R"===v)) showOverlay(true,"성공!");
+}
+function currentBoatCount(){return Object.values(state.positions).filter(v=>v==="BOAT").length}
+
+boat.addEventListener("dragover",e=>{if(!state.moving)e.preventDefault()})
+boat.addEventListener("drop",e=>{
+  if(state.moving)return;
+  e.preventDefault();
+  const name=e.dataTransfer.getData("text/plain"); if(!name)return;
+  const st=STAGES[state.stageIndex];
+  if(state.positions[name]!=="BOAT"&&currentBoatCount()>=st.capacity)return;
+  const same=(state.positions[name]===state.boatSide)||(state.positions[name]==="BOAT");
+  if(!same)return;
+  state.positions[name]=(state.positions[name]==="BOAT")?state.boatSide:"BOAT";
+  render();
+});
+[leftDock,rightDock].forEach(dock=>{
+  dock.addEventListener("dragover",e=>{if(!state.moving)e.preventDefault()});
+  dock.addEventListener("drop",e=>{
+    if(state.moving)return;
+    e.preventDefault();
+    const name=e.dataTransfer.getData("text/plain"); if(!name)return;
+    const side=(dock===leftDock)?"L":"R";
+    if(state.positions[name]==="BOAT"&&state.boatSide===side){
+      state.positions[name]=side; render();
     }
+  })
+})
 
-    function bindUI(){
-      $('#btnReset').addEventListener('click', ()=> loadStage(state.stageIdx));
-      $('#btnLoad').addEventListener('click', ()=> loadStage(state.stageIdx));
-      $('#btnMove').addEventListener('click', trySail);
-      $('#btnCheat').addEventListener('click', forceClear);
+function moveBoat(){
+  if(state.moving)return;
+  const st=STAGES[state.stageIndex];
+  if(currentBoatCount()===0)return;
+  if(st.requiresPerson&&state.positions["person"]!=="BOAT")return;
+  if(currentBoatCount()>st.capacity)return;
 
-      // Robust cheat: backquote immediately + Enter, or double-backquote within 700ms, or with modifiers
-      let armed=false, last=0;
-      window.addEventListener('keydown', (e)=>{
-        const isBack = (e.key==='`'||e.key==='~'||e.code==='Backquote'||e.key==='₩');
-        if(isBack && (e.ctrlKey||e.metaKey||e.altKey||e.shiftKey)) return void forceClear();
-        if(isBack){ const now=Date.now(); if(now-last<700) return void forceClear(); armed=true; last=now; return; }
-        if(armed && e.key==='Enter'){ armed=false; return void forceClear(); }
-        armed=false;
-      });
-    }
+  state.boatSide=state.boatSide==="L"?"R":"L";
+  state.moving=true; boatWrap.classList.add("moving");
+  boatWrap.style.left=boatLeftPercent(state.boatSide)+"%";
+  setTimeout(()=>{
+    boatWrap.classList.remove("moving");
+    for(const k in state.positions){ if(state.positions[k]==="BOAT") state.positions[k]=state.boatSide }
+    state.moving=false; render();
+  },1100);
+}
 
-    // ---------- Render & Helpers ----------
-    function render(){
-      const s = STAGES[state.stageIdx];
-      stageTag.textContent = `· ${s.title}`; capView.textContent = s.boatCap;
-      leftRows.innerHTML=''; rightRows.innerHTML=''; boatHold.innerHTML='';
+/* 오버레이 및 타이밍 */
+const overlay=$("#overlay"),overlayTitle=$("#overlayTitle"),overlayMsg=$("#overlayMsg"),timeMsg=$("#timeMsg"),nextBtn=$("#nextBtn"),replayBtn=$("#replayBtn"),homeBtn=$("#homeBtn"),finalTimes=$("#finalTimes");
+function showOverlay(success,msg){
+  clearInterval(state.timerId);
+  overlayTitle.textContent=success?"🎉 성공!":"❌ 실패";
+  overlayMsg.textContent=msg||"";
+  const elapsedMs=Date.now()-state.startTs;
+  if(success){
+    state.stageTimes[state.stageIndex]=elapsedMs;
+    timeMsg.textContent=`기록: ${formatTime(elapsedMs)}`;
+  }else{
+    timeMsg.textContent=`기록: ${formatTime(elapsedMs)}`;
+  }
 
-      const loc={left:[], right:[], boat:[]};
-      s.tokens.forEach(tok=>{ const w=state.where.get(tok.id)||'left'; state.where.set(tok.id,w); loc[w].push(tok); });
-      if(loc.left.length) leftRows.appendChild(makeRow(loc.left));
-      if(loc.right.length) rightRows.appendChild(makeRow(loc.right));
-      if(loc.boat.length) boatHold.appendChild(makeRow(loc.boat));
-      updateStatus();
-    }
+  const isLast = success && state.stageIndex===STAGES.length-1;
+  if(isLast){
+    finalTimes.classList.remove("hidden");
+    finalTimes.innerHTML = buildTimesHtml(state.stageTimes);
+    nextBtn.style.display="none";
+    homeBtn.style.display="inline-block";
+  }else{
+    finalTimes.classList.add("hidden");
+    nextBtn.style.display=(success&&state.stageIndex<STAGES.length-1)?"inline-block":"none";
+    homeBtn.style.display=(success&&state.stageIndex===STAGES.length-1)?"inline-block":"none";
+  }
+  replayBtn.style.display="inline-block";
+  overlay.style.display="flex";
+}
+function buildTimesHtml(arr){
+  const rows = arr.map((ms,i)=>`<div class="row"><span>스테이지 ${i+1}</span><span>${ms!=null?formatTime(ms):"-"}</span></div>`).join("");
+  const total = arr.reduce((a,b)=>a+(b||0),0);
+  return rows + `<div class="row total"><span>합계</span><span>${formatTime(total)}</span></div>`;
+}
+function hideOverlay(){overlay.style.display="none"}
 
-    function makeRow(arr){ const row=document.createElement('div'); row.className='row'; arr.forEach(tok=> row.appendChild(renderToken(tok))); return row; }
+function startStage(i){
+  state.stageIndex=i;
+  const st=STAGES[i];
+  state.positions={}; st.tokens.forEach(t=>state.positions[t]="L");
+  state.boatSide="L"; state.moving=false; boatWrap.style.left=boatLeftPercent("L")+"%";
+  hideOverlay(); startTimer(); render();
+}
+function enterGame(){$("#menu").classList.add("hidden");$("#game").classList.remove("hidden");startStage(0);}
+function enterMenu(){$("#menu").classList.remove("hidden");$("#game").classList.add("hidden");clearInterval(state.timerId);}
+function startTimer(){state.startTs=Date.now();clearInterval(state.timerId);state.timerId=setInterval(()=>$("#elapsed").textContent=formatTime(Date.now()-state.startTs),200);}
+function formatTime(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${(s%60).toString().padStart(2,"0")}`}
 
-    function renderToken(tok){
-      const d=document.createElement('div'); d.className='token'+(tok.small?' small':''); d.dataset.id=tok.id; d.title=tok.name;
-      d.innerHTML=`<span class="e">${tok.emoji}</span><span class="lbl">${tok.name}</span>`;
-      d.addEventListener('click', ()=> onTokenClick(tok));
-      return d;
-    }
+$("#startBtn").addEventListener("click",enterGame);
+$("#rulesBtn").addEventListener("click",()=>$("#rulesModal").style.display="flex");
+$("#closeRules").addEventListener("click",()=>$("#rulesModal").style.display="none");
+$("#resetBtn").addEventListener("click",()=>startStage(state.stageIndex));
+$("#moveBtn").addEventListener("click",moveBoat);
+nextBtn.addEventListener("click",()=>{hideOverlay();startStage(state.stageIndex+1)});
+replayBtn.addEventListener("click",()=>{hideOverlay();startStage(state.stageIndex)});
+homeBtn.addEventListener("click",()=>{hideOverlay();enterMenu()});
 
-    function onTokenClick(tok){
-      const s=STAGES[state.stageIdx]; const loc=state.where.get(tok.id);
-      if(loc==='boat'){ state.where.set(tok.id, state.boatSide); }
-      else if(loc===state.boatSide){ if(tokensIn('boat').length < s.boatCap) state.where.set(tok.id,'boat'); else toast('배가 가득 찼어요'); }
-      else { toast('배가 있는 쪽에서만 승선 가능'); }
-      render();
-    }
-
-    function tokensIn(side){ const s=STAGES[state.stageIdx]; return s.tokens.filter(t=> state.where.get(t.id)===side); }
-
-    function trySail(){
-      const s=STAGES[state.stageIdx];
-      // toggle side
-      state.boatSide = (state.boatSide==='left') ? 'right' : 'left';
-      const err = (s.rule||(()=>null))({ left:tokensIn('left'), right:tokensIn('right'), boat:tokensIn('boat'), where:state.where });
-      if(err){ state.boatSide = (state.boatSide==='left') ? 'right' : 'left'; toast(err); return render(); }
-      render();
-      // clear check
-      const allRight = s.tokens.every(tok=> state.where.get(tok.id)==='right');
-      if(allRight){ toast(`Stage ${s.id} 성공!`); if(state.stageIdx<STAGES.length-1){ setTimeout(()=>loadStage(state.stageIdx+1),600); } else { setTimeout(()=>toast('모든 스테이지 완료! v1.0-light'), 800); } }
-    }
-
-    function updateStatus(){ const s=STAGES[state.stageIdx]; const allRight = s.tokens.every(tok=> state.where.get(tok.id)==='right'); status.textContent = allRight ? `🎉 Stage ${s.id} Clear` : `Boat on ${state.boatSide.toUpperCase()} — click tokens, then Move`; }
-
-    function forceClear(){ const s=STAGES[state.stageIdx]; s.tokens.forEach(tok=> state.where.set(tok.id,'right')); render(); toast(`치트로 Stage ${s.id} 클리어`); if(state.stageIdx<STAGES.length-1){ setTimeout(()=>loadStage(state.stageIdx+1),500);} else { setTimeout(()=>toast('모든 스테이지 완료! v1.0-light'),700);} }
-
-    function uid(){ return Math.random().toString(36).slice(2,9); }
-    function toast(m){ toastEl.textContent=m; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>toastEl.classList.remove('show'),1500); }
-  </script>
+/* 개발자 치트키
+   - ₩ + ←/→ : 이전/다음 스테이지 바로 이동
+   - ₩ + Enter : 현재 스테이지 강제 성공 처리
+*/
+function forceClearStage(){
+  const st=STAGES[state.stageIndex];
+  st.tokens.forEach(t=>state.positions[t]="R");
+  render();
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="₩") state.devCheat=true;
+  if(state.devCheat && e.key==="ArrowRight" && state.stageIndex<STAGES.length-1) startStage(state.stageIndex+1);
+  if(state.devCheat && e.key==="ArrowLeft"  && state.stageIndex>0) startStage(state.stageIndex-1);
+  if(state.devCheat && (e.key==="Enter" || e.code==="Enter")) { forceClearStage(); }
+});
+document.addEventListener("keyup",e=>{if(e.key==="₩") state.devCheat=false});
+</script>
 </body>
 </html>
