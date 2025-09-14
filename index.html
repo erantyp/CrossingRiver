@@ -6,7 +6,7 @@
 <title>강 건너기 퍼즐 ⛵ (Stages 1~5)</title>
 <style>
   :root {
-    --bg:#f4fbff; --ink:#1f2937; --accent:#0ea5e9; --good:#16a34a; --bad:#ef4444; --card:#ffffffcc;
+    --bg:#f4fbff; --ink:#1f2937; --accent:#0ea5e9; --card:#ffffffcc;
   }
   body{margin:0;font-family:system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,sans-serif;background:var(--bg);color:var(--ink)}
   .hidden{display:none!important}
@@ -26,11 +26,10 @@
   .boat-wrap{position:absolute;top:55%;transform:translate(-50%,-50%);transition:left 1.1s cubic-bezier(0.65,0,0.35,1)}
   .boat-wrap.moving{animation:bob .5s ease-in-out infinite alternate}
   @keyframes bob{from{transform:translate(-50%,-50%) rotate(-1deg)}to{transform:translate(-50%,-52%) rotate(1deg)}}
-  .boat{position:relative;width:320px;max-width:80%;height:110px;background:#8b5a2b;border-radius:12px;box-shadow:0 12px 0 #5a3817 inset}
+  .boat{position:relative;width:320px;max-width:80%;height:110px;background:#8b5a2b;border-radius:12px}
   .slots{position:absolute;left:8px;right:8px;bottom:8px;height:88px;display:flex;gap:10px;justify-content:center;align-items:flex-end}
   .slot{width:80px;height:80px;border:2px dashed #ffffff99;border-radius:12px;background:#ffffff22;display:flex;align-items:center;justify-content:center;color:#fff}
-  .token{width:80px;height:80px;border-radius:16px;background:var(--card);border:1px solid #e5e7eb;box-shadow:0 6px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:36px;cursor:grab;transition:.1s}
-  .token:active{cursor:grabbing}
+  .token{width:80px;height:80px;border-radius:16px;background:var(--card);border:1px solid #e5e7eb;box-shadow:0 6px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:36px;cursor:grab}
   .result{position:absolute;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
   .result .card{background:#fff;border-radius:18px;padding:24px;width:min(520px,88vw);text-align:center}
   .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
@@ -91,7 +90,7 @@ const STAGES=[
   rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const s of["L","R"]){const h=info(s);if(h.includes("A1")||h.includes("A2"))if(!h.includes("A")&&h.includes("B"))return`${s==="L"?"왼쪽":"오른쪽"}: B가 A의 아이를 괴롭힘`;if(h.includes("B1")||h.includes("B2"))if(!h.includes("B")&&h.includes("A"))return`${s==="L"?"왼쪽":"오른쪽"}: A가 B의 아이를 괴롭힘`;if(h.includes("Lion")&&!h.includes("Keeper"))return`${s==="L"?"왼쪽":"오른쪽"}: 사자가 날뜀`; }return null;}},
 
  {name:"5단계 · 조련사와 동물들",tokens:["Trainer","Elephant","Tiger","Dog","Cat","Mouse"],capacity:2,requiresPerson:false,ruleText:"코끼리는 쥐와만 동승 가능. 호랑이+개는 다른 동물 동승 불가. 위험쌍(조련사 없으면 위험): 코끼리-호랑이, 호랑이-개, 개-고양이, 고양이-쥐, 쥐-코끼리.",
-  rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const s of["L","R"]){const h=info(s);const has=t=>h.includes(t);if(has("Elephant")){if(h.some(x=>!["Elephant","Mouse"].includes(x)&&x!=="Trainer"))return`${s==="L"?"왼쪽":"오른쪽"}: 코끼리가 동승 불가 동물과 있음`; }if(has("Tiger")&&has("Dog")&&h.length>2)return`${s==="L"?"왼쪽":"오른쪽"}: 호랑이+개+다른 동물 동승 불가`;const pairs=[["Elephant","Tiger"],["Tiger","Dog"],["Dog","Cat"],["Cat","Mouse"],["Mouse","Elephant"]];for(const [a,b] of pairs){if(h.includes(a)&&h.includes(b)&&!h.includes("Trainer"))return`${s==="L"?"왼쪽":"오른쪽"}: ${a}와 ${b}가 싸움`;}}return null;}}
+  rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const s of["L","R"]){const h=info(s);const has=t=>h.includes(t);if(has("Elephant")){if(h.some(x=>!["Elephant","Mouse"].includes(x)&&x!=="Trainer"))return`${s==="L"?"왼쪽":"오른쪽"}: 코끼리가 동승 불가 동물과 있음`;}if(has("Tiger")&&has("Dog")&&h.length>2)return`${s==="L"?"왼쪽":"오른쪽"}: 호랑이+개+다른 동물 동승 불가`;const pairs=[["Elephant","Tiger"],["Tiger","Dog"],["Dog","Cat"],["Cat","Mouse"],["Mouse","Elephant"]];for(const [a,b] of pairs){if(h.includes(a)&&h.includes(b)&&!h.includes("Trainer"))return`${s==="L"?"왼쪽":"오른쪽"}: ${a}와 ${b}가 싸움`;}}return null;}}
 ];
 
 const $=s=>document.querySelector(s);
@@ -103,14 +102,16 @@ function emoji(name){
   if(name==="person")return"🧍";if(name==="wolf")return"🐺";if(name==="goat")return"🐑";if(name==="cabbage")return"🥬";
   if(name.startsWith("M"))return"🧑‍🦳";if(name.startsWith("V"))return"🧛";
   if(name.startsWith("Elf"))return"🧝";if(name.startsWith("Zombie"))return"🧟";if(name.startsWith("Wizard"))return"🧙";
-  if(name==="A")return"🧑A";if(name==="B")return"🧑B";if(name==="Keeper")return"👨‍🌾";if(name==="Lion")return"🦁";
+  if(name==="A"||name==="A1"||name==="A2")return"👩🏿‍🦲";if(name==="B"||name==="B1"||name==="B2")return"👩🏻‍🦲";
+  if(name==="Keeper")return"👨‍🌾";if(name==="Lion")return"🦁";
   if(name==="Trainer")return"👨‍🏫";if(name==="Elephant")return"🐘";if(name==="Tiger")return"🐅";if(name==="Dog")return"🐕";if(name==="Cat")return"🐈";if(name==="Mouse")return"🐭";
   return name;
 }
 
 function makeToken(name){
   const el=document.createElement("div");el.className="token";el.draggable=true;el.dataset.id=name;el.textContent=emoji(name);
-  if(name.includes("Boss")) el.style.fontSize="48px"; // 두목 강조
+  if(name.includes("Boss")) el.style.fontSize="48px"; // stage3 두목 강조
+  if(name==="A1"||name==="A2"||name==="B1"||name==="B2") el.style.fontSize="20px"; // stage4 자식 작게
   el.addEventListener("dragstart",e=>{if(state.moving){e.preventDefault();return}e.dataTransfer.setData("text/plain",name)});
   return el;
 }
@@ -129,7 +130,7 @@ const overlay=$("#overlay"),overlayTitle=$("#overlayTitle"),overlayMsg=$("#overl
 function showOverlay(success,msg){clearInterval(state.timerId);overlayTitle.textContent=success?"🎉 성공!":"❌ 실패";overlayMsg.textContent=msg;timeMsg.textContent=`기록: ${formatTime(Date.now()-state.startTs)}`;overlay.style.display="flex";nextBtn.style.display=(success&&state.stageIndex<STAGES.length-1)?"inline-block":"none";homeBtn.style.display=(success&&state.stageIndex===STAGES.length-1)?"inline-block":"none";replayBtn.style.display="inline-block";}
 function hideOverlay(){overlay.style.display="none"}
 
-function startStage(i){state.stageIndex=i;const st=STAGES[i];state.positions={};st.tokens.forEach(t=>state.positions[t]="L");state.boatSide="L";state.moving=false;boatWrap.style.left=boatLeftPercent("L")+"%";slotA.textContent="";slotB.textContent="";hideOverlay();startTimer();render();}
+function startStage(i){state.stageIndex=i;const st=STAGES[i];state.positions={};st.tokens.forEach(t=>state.positions[t]="L");state.boatSide="L";state.moving=false;boatWrap.style.left=boatLeftPercent("L")+"%";hideOverlay();startTimer();render();}
 function enterGame(){$("#menu").classList.add("hidden");$("#game").classList.remove("hidden");startStage(0);}
 function enterMenu(){$("#menu").classList.remove("hidden");$("#game").classList.add("hidden");clearInterval(state.timerId);}
 function startTimer(){state.startTs=Date.now();clearInterval(state.timerId);state.timerId=setInterval(()=>$("#elapsed").textContent=formatTime(Date.now()-state.startTs),250);}
