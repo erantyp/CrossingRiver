@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>강 건너기 퍼즐 ⛵ (Stages 1~5)</title>
+<title>강 건너기 퍼즐 ⛵ </title>
 <style>
   :root {
     --bg:#f4fbff; --ink:#1f2937; --accent:#0ea5e9; --card:#ffffffcc;
@@ -38,7 +38,7 @@
 </head>
 <body>
 <main id="menu" class="center-col">
-  <h1>강 건너기 퍼즐 ⛵</h1>
+  <h1>강 건너기 퍼즐 1.1 ⛵</h1>
   <button class="btn primary" id="startBtn">🚀 게임 시작</button>
 </main>
 
@@ -77,16 +77,16 @@
 
 <script>
 const STAGES=[
- {name:"1단계 · 늑대-양-양배추",tokens:["person","wolf","goat","cabbage"],capacity:2,requiresPerson:true,ruleText:"늑대, 양, 양배추를 옮겨야 하는 사람이 있습니다. 사람만 배의 노를 저을 수 있습니다. 사람이 없는 둑에서 늑대와 양 또는 양과 양배추가 남으면 게임 오버입니다.",
+ {name:"1단계 · 늑대와 양 그리고 양배추",tokens:["person","wolf","goat","cabbage"],capacity:2,requiresPerson:true,ruleText:"늑대, 양, 양배추를 옮겨야 하는 사람이 있습니다. 사람만 배의 노를 저을 수 있습니다. 사람이 없는 둑에서 늑대와 양 또는 양과 양배추가 남으면 게임 오버입니다.",
   rules:(pos,side)=>{const b={L:[],R:[]};for(const t in pos){const s=pos[t]==="BOAT"?side:pos[t];b[s].push(t);}if(!b.L.includes("person")){if(b.L.includes("wolf")&&b.L.includes("goat"))return"왼쪽: 늑대가 양을 먹음";if(b.L.includes("goat")&&b.L.includes("cabbage"))return"왼쪽: 양이 양배추를 먹음";}if(!b.R.includes("person")){if(b.R.includes("wolf")&&b.R.includes("goat"))return"오른쪽: 늑대가 양을 먹음";if(b.R.includes("goat")&&b.R.includes("cabbage"))return"오른쪽: 양이 양배추를 먹음";}return null;}},
 
- {name:"2단계 · 선교사-뱀파이어",tokens:["M1","M2","M3","V1","V2","V3"],capacity:2,requiresPerson:false,ruleText:"선교사와 뱀파이어 모두 배를 몰 수 있지만 배에는 최대 2명까지만 탈 수 있습니다. 어느 둑이든 선교사의 수가 뱀파이어의 수보다 더 많으면 게임 오버입니다.",
+ {name:"2단계 · 선교사와 뱀파이어",tokens:["M1","M2","M3","V1","V2","V3"],capacity:2,requiresPerson:false,ruleText:"선교사와 뱀파이어 모두 배를 몰 수 있지만 배에는 최대 2명까지만 탈 수 있습니다. 어느 둑이든 선교사의 수가 뱀파이어의 수보다 더 많으면 게임 오버입니다.",
   rules:(pos,side)=>{const c={L:{M:0,V:0},R:{M:0,V:0}};for(const t in pos){const s=pos[t]==="BOAT"?side:pos[t];if(t.startsWith("M"))c[s].M++;else c[s].V++;}for(const s of["L","R"])if(c[s].M>0&&c[s].V>c[s].M)return`${s==="L"?"왼쪽":"오른쪽"}: 뱀파이어가 선교사를 잡아먹음`;return null;}},
 
  {name:"3단계 · 엘프·좀비·마법사",tokens:["ElfBoss","Elf","ZombieBoss","Zombie","WizardBoss","Wizard"],capacity:2,requiresPerson:false,ruleText:"엘프, 좀비, 마법사 무리가 있습니다. 부하는 자기 두목이 있을 때만 안전합니다. 다른 두목과만 있으면 위험합니다.",
   rules:(pos,side)=>{const groups={"ElfBoss":"Elf","ZombieBoss":"Zombie","WizardBoss":"Wizard"};for(const s of["L","R"]){const here=Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const [boss,minion] of Object.entries(groups)){if(here.includes(minion)&&!here.includes(boss)){const otherBoss=Object.keys(groups).filter(b=>b!==boss&&here.includes(b));if(otherBoss.length)return`${s==="L"?"왼쪽":"오른쪽"}: ${minion}이 다른 두목과만 있어 위험!`;}}}return null;}},
 
- {name:"4단계 · A와 B, 사육사와 사자",tokens:["A","A1","A2","B","B1","B2","Keeper","Lion"],capacity:2,requiresPerson:false,ruleText:"두 종류의 어른 외계인은 상대 외계인이 없으면 아기 외계인을 괴롭힙니다. 사자는 사육사 없으면 모두에게 위험합니다. 노는 어른 외계인과 사육사만 저을 수 있습니다.",
+ {name:"4단계 · 외계인들! 사육사와 사자",tokens:["A","A1","A2","B","B1","B2","Keeper","Lion"],capacity:2,requiresPerson:false,ruleText:"두 종류의 어른 외계인은 상대 외계인이 없으면 아기 외계인을 괴롭힙니다. 사자는 사육사 없으면 모두에게 위험합니다. 노는 어른 외계인과 사육사만 저을 수 있습니다.",
   rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const s of["L","R"]){const h=info(s);if(h.includes("A1")||h.includes("A2"))if(!h.includes("A")&&h.includes("B"))return`${s==="L"?"왼쪽":"오른쪽"}: B가 A의 아이를 괴롭힘`;if(h.includes("B1")||h.includes("B2"))if(!h.includes("B")&&h.includes("A"))return`${s==="L"?"왼쪽":"오른쪽"}: A가 B의 아이를 괴롭힘`;if(h.includes("Lion")&&!h.includes("Keeper"))return`${s==="L"?"왼쪽":"오른쪽"}: 사자가 날뜀`; }return null;}},
 
  {name:"5단계 · 조련사와 동물들",tokens:["Trainer","Elephant","Tiger","Dog","Cat","Mouse"],capacity:4,requiresPerson:false,ruleText:"코끼리는 배에서 쥐 외 동물과 동승 불가하고, 호랑이는 개와 함께 탈 경우 배에 더 이상 다른 동물을 태울 수 없습니다. 코끼리-호랑이, 호랑이-개, 개-고양이, 고양이-쥐, 쥐-코끼리는 조련사가 없으면 서로 싸웁니다.",
@@ -99,12 +99,12 @@ const leftDock=$("#dock-left"),rightDock=$("#dock-right"),boatWrap=$("#boatWrap"
 
 function boatLeftPercent(s){return s==="L"?36:64}
 function emoji(name){
-  if(name==="person")return"🧍";if(name==="wolf")return"🐺";if(name==="goat")return"🐑";if(name==="cabbage")return"🥬";
+  if(name==="person")return"🧍";if(name==="wolf")return"🐺";if(name==="goat")return"🐑";if(name==="cabbage")return"🥬";if(name==="Mouse")return"🐭";
   if(name.startsWith("M"))return"🧑‍🦳";if(name.startsWith("V"))return"🧛";
   if(name.startsWith("Elf"))return"🧝";if(name.startsWith("Zombie"))return"🧟";if(name.startsWith("Wizard"))return"🧙";
   if(name==="A"||name==="A1"||name==="A2")return"👾";if(name==="B"||name==="B1"||name==="B2")return"👽";
   if(name==="Keeper")return"👨‍🌾";if(name==="Lion")return"🦁";
-  if(name==="Trainer")return"👨";if(name==="Elephant")return"🐘";if(name==="Tiger")return"🐅";if(name==="Dog")return"🐕";if(name==="Cat")return"🐈";if(name==="Mouse")return"🐭";
+  if(name==="Trainer")return"👨";if(name==="Elephant")return"🐘";if(name==="Tiger")return"🐅";if(name==="Dog")return"🐕";if(name==="Cat")return"🐈";
   return name;
 }
 
