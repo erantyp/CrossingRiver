@@ -77,19 +77,19 @@
 
 <script>
 const STAGES=[
- {name:"1단계 · 늑대-양-양배추",tokens:["person","wolf","goat","cabbage"],capacity:2,requiresPerson:true,ruleText:"사람과 함께 1개만 이동. 사람이 없는 둑에서 늑대+양 또는 양+양배추가 남으면 게임 오버.",
+ {name:"1단계 · 늑대-양-양배추",tokens:["person","wolf","goat","cabbage"],capacity:2,requiresPerson:true,ruleText:"사람 한 명이 늑대, 양, 양배추를 모두 옮겨야 합니다. 사람이 없는 둑에서 늑대와 양 또는 양 또는 양배추가 남으면 게임 오버입니다.",
   rules:(pos,side)=>{const b={L:[],R:[]};for(const t in pos){const s=pos[t]==="BOAT"?side:pos[t];b[s].push(t);}if(!b.L.includes("person")){if(b.L.includes("wolf")&&b.L.includes("goat"))return"왼쪽: 늑대가 양을 먹음";if(b.L.includes("goat")&&b.L.includes("cabbage"))return"왼쪽: 양이 양배추를 먹음";}if(!b.R.includes("person")){if(b.R.includes("wolf")&&b.R.includes("goat"))return"오른쪽: 늑대가 양을 먹음";if(b.R.includes("goat")&&b.R.includes("cabbage"))return"오른쪽: 양이 양배추를 먹음";}return null;}},
 
- {name:"2단계 · 선교사-뱀파이어",tokens:["M1","M2","M3","V1","V2","V3"],capacity:2,requiresPerson:false,ruleText:"배는 최대 2명. 어느 둑이든 선교사가 있고 뱀파이어가 더 많으면 게임 오버.",
+ {name:"2단계 · 선교사-뱀파이어",tokens:["M1","M2","M3","V1","V2","V3"],capacity:2,requiresPerson:false,ruleText:"모두 배를 몰 수 있지만 배에는 최대 2명이 탈 수 있습니다. 어느 둑이든 선교사의 수가 뱀파이어의 수보다 더 많으면 게임 오버입니다.",
   rules:(pos,side)=>{const c={L:{M:0,V:0},R:{M:0,V:0}};for(const t in pos){const s=pos[t]==="BOAT"?side:pos[t];if(t.startsWith("M"))c[s].M++;else c[s].V++;}for(const s of["L","R"])if(c[s].M>0&&c[s].V>c[s].M)return`${s==="L"?"왼쪽":"오른쪽"}: 뱀파이어가 선교사를 잡아먹음`;return null;}},
 
- {name:"3단계 · 엘프·좀비·마법사",tokens:["ElfBoss","Elf","ZombieBoss","Zombie","WizardBoss","Wizard"],capacity:2,requiresPerson:false,ruleText:"엘프/좀비/마법사 무리. 조직원은 자기 두목이 있을 때만 안전. 다른 두목과만 있으면 위험.",
+ {name:"3단계 · 엘프·좀비·마법사",tokens:["ElfBoss","Elf","ZombieBoss","Zombie","WizardBoss","Wizard"],capacity:2,requiresPerson:false,ruleText:"엘프, 좀비, 마법사 무리가 있습니다. 부하는 자기 두목이 있을 때만 안전하고 다른 두목과만 있으면 위험합니다.",
   rules:(pos,side)=>{const groups={"ElfBoss":"Elf","ZombieBoss":"Zombie","WizardBoss":"Wizard"};for(const s of["L","R"]){const here=Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const [boss,minion] of Object.entries(groups)){if(here.includes(minion)&&!here.includes(boss)){const otherBoss=Object.keys(groups).filter(b=>b!==boss&&here.includes(b));if(otherBoss.length)return`${s==="L"?"왼쪽":"오른쪽"}: ${minion}이 다른 두목과만 있어 위험!`;}}}return null;}},
 
- {name:"4단계 · A와 B, 사육사와 사자",tokens:["A","A1","A2","B","B1","B2","Keeper","Lion"],capacity:2,requiresPerson:false,ruleText:"A,B는 상대 아이를 괴롭힘(부모 없을 때). 사자는 사육사 없으면 위험. 배 용량 2, 노 젓는 건 A,B,Keeper만.",
+ {name:"4단계 · A와 B, 사육사와 사자",tokens:["A","A1","A2","B","B1","B2","Keeper","Lion"],capacity:2,requiresPerson:false,ruleText:"두 어른은 각각 아이를 둘 씩 데리고 있습니다. 어른은 상대 어른이 없으면 아이를 괴롭힙니다. 사자는 사육사 없으면 모두에게 위험합니다. 배의 노는 두 어른과 사육사만 저을 수 있습니다.",
   rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);for(const s of["L","R"]){const h=info(s);if(h.includes("A1")||h.includes("A2"))if(!h.includes("A")&&h.includes("B"))return`${s==="L"?"왼쪽":"오른쪽"}: B가 A의 아이를 괴롭힘`;if(h.includes("B1")||h.includes("B2"))if(!h.includes("B")&&h.includes("A"))return`${s==="L"?"왼쪽":"오른쪽"}: A가 B의 아이를 괴롭힘`;if(h.includes("Lion")&&!h.includes("Keeper"))return`${s==="L"?"왼쪽":"오른쪽"}: 사자가 날뜀`; }return null;}},
 
- {name:"5단계 · 조련사와 동물들",tokens:["Trainer","Elephant","Tiger","Dog","Cat","Mouse"],capacity:4,requiresPerson:false,ruleText:"코끼리는 배에서 쥐 외 동물과 동승 불가. 호랑이+개는 배에서 다른 동물 동승 불가. 위험쌍(조련사 없으면 위험): 코끼리-호랑이, 호랑이-개, 개-고양이, 고양이-쥐, 쥐-코끼리.",
+ {name:"5단계 · 조련사와 동물들",tokens:["Trainer","Elephant","Tiger","Dog","Cat","Mouse"],capacity:4,requiresPerson:false,ruleText:"코끼리는 배에서 쥐 외의 동물과 동승 불가합니다. 호랑이+개는 배에서 다른 동물 동승 불가. 위험쌍(조련사 없으면 위험): 코끼리-호랑이, 호랑이-개, 개-고양이, 고양이-쥐, 쥐-코끼리.",
   rules:(pos,side)=>{const info=s=>Object.entries(pos).filter(([k,v])=>(v==="BOAT"?side:v)===s).map(([k])=>k);const boatMembers=Object.entries(pos).filter(([k,v])=>v==="BOAT").map(([k])=>k);if(boatMembers.includes("Elephant")){if(boatMembers.some(x=>!["Elephant","Mouse"].includes(x)))return"배 안: 코끼리가 동승 불가 동물과 있음";}if(boatMembers.includes("Tiger")&&boatMembers.includes("Dog")&&boatMembers.length>2){return"배 안: 호랑이+개와 다른 동물 동승 불가";}for(const s of["L","R"]){const h=info(s);const has=t=>h.includes(t);const pairs=[["Elephant","Tiger"],["Tiger","Dog"],["Dog","Cat"],["Cat","Mouse"],["Mouse","Elephant"]];for(const [a,b] of pairs){if(has(a)&&has(b)&&!has("Trainer"))return`${s==="L"?"왼쪽":"오른쪽"}: ${a}와 ${b}가 싸움`;}}return null;}}
 ];
 
