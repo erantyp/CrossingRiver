@@ -8,6 +8,8 @@
   :root { --bg:#f4fbff; --ink:#1f2937; --accent:#0ea5e9; --card:#ffffffcc; }
   body{margin:0;font-family:system-ui,Segoe UI,Roboto,Apple SD Gothic Neo,sans-serif;background:var(--bg);color:var(--ink)}
   .hidden{display:none!important}
+#menu{position:relative;z-index:50}
+#game.hidden{pointer-events:none}
   .center-col{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
   .btn{padding:12px 18px;border-radius:14px;border:1px solid #dbe5ef;font-size:16px;font-weight:700;cursor:pointer;background:#fff;box-shadow:0 6px 14px rgba(0,0,0,.06);transition:.2s}
   .btn.primary{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#fff;border:none}
