@@ -13,8 +13,19 @@
   .btn.primary{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#fff;border:none}
   .btn.next{background:linear-gradient(180deg,#34d399,#059669);color:#fff;border:none}
   .container{max-width:1100px;margin:0 auto;padding:20px}
-  .hud{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:10px 0 18px}
+  .hud{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:10px 0 10px}
   .pill{padding:6px 10px;border-radius:999px;background:#eef6ff;color:#1d4ed8;border:1px solid #c7dbff;font-weight:700}
+
+  /* 규칙 배너 */
+  .rule-banner{
+    margin:8px 0 14px;
+    padding:10px 14px;
+    border-radius:12px;
+    background:#ffffffcc;
+    border:1px solid #dbe5ef;
+    box-shadow:0 6px 14px rgba(0,0,0,.06);
+    font-size:14px; line-height:1.4;
+  }
 
   /* 보드 레이아웃 */
   .board{position:relative;width:100%;height:540px;border-radius:18px;overflow:hidden;border:1px solid #e5e7eb;background:#bfe8ff}
@@ -43,8 +54,20 @@
   @keyframes bob{from{transform:translate(-50%,-50%) rotate(-1deg)}to{transform:translate(-50%,-52%) rotate(1deg)}}
 
   .boat{position:relative;width:360px;max-width:86%;height:110px;background:#8b5a2b;border-radius:12px;transition:.25s}
-  .slots{position:absolute;left:8px;right:8px;bottom:8px;height:88px;display:flex;gap:10px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
-  .slot{width:80px;height:80px;border:2px dashed #ffffff99;border-radius:12px;background:#ffffff22;display:flex;align-items:center;justify-content:center;color:#fff}
+  .slots{position:absolute;left:8px;right:8px;bottom:8px;height:96px;display:flex;gap:10px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
+  .slot{width:88px;height:88px;border:2px dashed #ffffff99;border-radius:12px;background:#ffffff22;display:flex;align-items:center;justify-content:center;color:#fff}
+
+  .token{width:88px;height:88px;border-radius:16px;background:var(--card);border:1px solid #e5e7eb;box-shadow:0 6px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:40px;cursor:grab}
+
+  .result{position:absolute;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
+  .result .card{background:#fff;border-radius:18px;padding:24px;width:min(560px,88vw);text-align:center}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
+  .modal{background:#fff;border-radius:16px;padding:20px;max-width:600px}
+
+  .times{margin:12px auto 0;max-width:420px;text-align:left}
+  .times .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb}
+  .times .row.total{font-weight:800}
 
   /* ▼ 단계별 보트/슬롯 규칙 (파일 하단에 위치해야 우선 적용) */
   /* 1~4단계: 두 칸 전용 */
@@ -52,15 +75,15 @@
   .boat.two #slotC,
   .boat.two #slotD{display:none !important;}
 
-  /* 5단계: 큰 보트 + 2×2 고정 */
-  .boat.big{width:420px;height:150px;}
+  /* 5단계: 큰 보트 + 2×2 고정 + 위치 여백 튜닝 */
+  .boat.big{width:460px;height:210px;}
   .boat.big .slots{
     display:grid;
     grid-template-columns:repeat(2,1fr);
     grid-template-rows:repeat(2,1fr);
-    gap:10px;
-    justify-items:center;
-    align-items:end;
+    gap:12px;
+    left:16px; right:16px; bottom:14px; height:auto;
+    justify-items:center; align-items:end;
   }
   /* ▲ 단계별 보트/슬롯 규칙 끝 */
 </style>
@@ -94,6 +117,9 @@
       <button class="btn small primary" id="moveBtn">⛵ 이동</button>
     </div>
   </div>
+
+  <!-- 규칙 배너 (HUD 아래) -->
+  <div class="rule-banner" id="ruleBanner"></div>
 
   <div class="board">
     <div class="bank left"><div class="bank-title">왼쪽 둑</div><div class="dock" id="dock-left"></div></div>
@@ -236,8 +262,8 @@ function emoji(name){
 function makeToken(name){
   const el=document.createElement("div");el.className="token";el.draggable=true;el.dataset.id=name;el.textContent=emoji(name);
   if(name.includes("Boss")) el.style.fontSize="48px";
-  if(["Elf","Zombie","Wizard"].includes(name)) el.style.fontSize="24px";
-  if(name==="A1"||name==="A2"||name==="B1"||name==="B2") el.style.fontSize="20px";
+  if(["Elf","Zombie","Wizard"].includes(name)) el.style.fontSize="28px";
+  if(name==="A1"||name==="A2"||name==="B1"||name==="B2") el.style.fontSize="22px";
   el.addEventListener("dragstart",e=>{if(state.moving){e.preventDefault();return}e.dataTransfer.setData("text/plain",name)});
   return el;
 }
@@ -245,7 +271,6 @@ function makeToken(name){
 function clearSlots(){
   leftDock.replaceChildren();
   rightDock.replaceChildren();
-  // 모든 슬롯 비우기(숨겨진 것도 포함)
   Array.from(document.querySelectorAll('.slot')).forEach(s=>s.replaceChildren());
 }
 
@@ -271,7 +296,7 @@ function render(){
   clearSlots();
   const st=STAGES[state.stageIndex];
 
-  // 먼저 보트/슬롯 모양을 단계에 맞춰 세팅
+  // 보트/슬롯 모양을 단계에 맞춰 먼저 세팅
   adjustBoatSlots();
 
   // 토큰 렌더
@@ -286,7 +311,8 @@ function render(){
   }
 
   $("#stageName").textContent=st.name;
-  $("#ruleText").textContent=st.ruleText;
+  $("#ruleText").textContent=st.ruleText;       // 모달용
+  $("#ruleBanner").textContent=st.ruleText;     // 배너 표시
   $("#boatSideLabel").textContent=state.boatSide==="L"?"왼쪽":"오른쪽";
   boatWrap.style.left=boatLeftPercent(state.boatSide)+"%";
 
