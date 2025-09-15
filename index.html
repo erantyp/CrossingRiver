@@ -43,25 +43,26 @@
   @keyframes bob{from{transform:translate(-50%,-50%) rotate(-1deg)}to{transform:translate(-50%,-52%) rotate(1deg)}}
 
   .boat{position:relative;width:360px;max-width:86%;height:110px;background:#8b5a2b;border-radius:12px;transition:.25s}
-  /* 5단계에서만 붙는 큰 보트 */
-  .boat.big{width:420px;height:150px}
   .slots{position:absolute;left:8px;right:8px;bottom:8px;height:88px;display:flex;gap:10px;justify-content:center;align-items:flex-end;flex-wrap:wrap}
-  /* 5단계는 2×2 고정 */
-  .boat.big .slots{display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);gap:10px;justify-items:center;align-items:end}
-
   .slot{width:80px;height:80px;border:2px dashed #ffffff99;border-radius:12px;background:#ffffff22;display:flex;align-items:center;justify-content:center;color:#fff}
 
-  .token{width:80px;height:80px;border-radius:16px;background:var(--card);border:1px solid #e5e7eb;box-shadow:0 6px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;font-size:36px;cursor:grab}
+  /* ▼ 단계별 보트/슬롯 규칙 (파일 하단에 위치해야 우선 적용) */
+  /* 1~4단계: 두 칸 전용 */
+  .boat.two{width:360px;height:110px;}
+  .boat.two #slotC,
+  .boat.two #slotD{display:none !important;}
 
-  .result{position:absolute;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:10}
-  .result .card{background:#fff;border-radius:18px;padding:24px;width:min(560px,88vw);text-align:center}
-
-  .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:100}
-  .modal{background:#fff;border-radius:16px;padding:20px;max-width:600px}
-
-  .times{margin:12px auto 0;max-width:420px;text-align:left}
-  .times .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e5e7eb}
-  .times .row.total{font-weight:800}
+  /* 5단계: 큰 보트 + 2×2 고정 */
+  .boat.big{width:420px;height:150px;}
+  .boat.big .slots{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    grid-template-rows:repeat(2,1fr);
+    gap:10px;
+    justify-items:center;
+    align-items:end;
+  }
+  /* ▲ 단계별 보트/슬롯 규칙 끝 */
 </style>
 </head>
 <body>
@@ -213,7 +214,10 @@ const $=s=>document.querySelector(s);
 let state={stageIndex:0,positions:{},boatSide:"L",moving:false,startTs:null,timerId:null,devCheat:false,stageTimes:Array(STAGES.length).fill(null)};
 const leftDock=$("#dock-left"),rightDock=$("#dock-right"),boatWrap=$("#boatWrap"),boat=$("#boat");
 
-function getSlots(){ return Array.from(document.querySelectorAll('.slot')); }
+/* 보이는 슬롯만 반환(숨긴 C/D는 제외) */
+function getSlots(){
+  return Array.from(document.querySelectorAll('.slot')).filter(s=>s.offsetParent!==null);
+}
 
 /* 강 폭을 50%로 키웠으므로 보트 중앙을 강의 안쪽으로: 35% / 65% */
 function boatLeftPercent(s){return s==="L"?35:65}
@@ -241,51 +245,64 @@ function makeToken(name){
 function clearSlots(){
   leftDock.replaceChildren();
   rightDock.replaceChildren();
-  getSlots().forEach(s=>s.replaceChildren());
+  // 모든 슬롯 비우기(숨겨진 것도 포함)
+  Array.from(document.querySelectorAll('.slot')).forEach(s=>s.replaceChildren());
 }
 
-/* 슬롯/보트 크기 조정: 최소 수정 */
+/* 단계별 슬롯/보트 크기 조정 */
 function adjustBoatSlots(){
   const st=STAGES[state.stageIndex];
-  const slots=document.querySelectorAll('.slot');
+  const slots=Array.from(document.querySelectorAll('.slot'));
   if(st.capacity===2){
+    boat.classList.remove('big');
+    boat.classList.add('two');
     if(slots[0]) slots[0].style.display="flex";
     if(slots[1]) slots[1].style.display="flex";
     if(slots[2]) slots[2].style.display="none";
     if(slots[3]) slots[3].style.display="none";
-    boat.classList.remove("big");
-  }else{
+  }else{ // capacity === 4
+    boat.classList.remove('two');
+    boat.classList.add('big');
     slots.forEach(s=>s.style.display="flex");
-    boat.classList.add("big");
   }
 }
 
 function render(){
   clearSlots();
   const st=STAGES[state.stageIndex];
+
+  // 먼저 보트/슬롯 모양을 단계에 맞춰 세팅
+  adjustBoatSlots();
+
+  // 토큰 렌더
   for(const name of st.tokens){
     const pos=state.positions[name]; const el=makeToken(name);
-    if(pos==="L")leftDock.appendChild(el);
-    else if(pos==="R")rightDock.appendChild(el);
-    else if(pos==="BOAT"){ const tgt = getSlots().find(s=>s.childElementCount===0); if(tgt) tgt.appendChild(el); }
+    if(pos==="L") leftDock.appendChild(el);
+    else if(pos==="R") rightDock.appendChild(el);
+    else if(pos==="BOAT"){
+      const tgt = getSlots().find(s=>s.childElementCount===0);
+      if(tgt) tgt.appendChild(el);
+    }
   }
+
   $("#stageName").textContent=st.name;
   $("#ruleText").textContent=st.ruleText;
   $("#boatSideLabel").textContent=state.boatSide==="L"?"왼쪽":"오른쪽";
   boatWrap.style.left=boatLeftPercent(state.boatSide)+"%";
 
-  adjustBoatSlots(); // ★ 여기서 단계별 슬롯/보트 크기 반영
-
   const fail=st.rules(state.positions,state.boatSide);
   if(fail) return showOverlay(false,fail);
-
   if(Object.values(state.positions).every(v=>"R"===v)) showOverlay(true,"성공!");
 }
 
 function currentBoatCount(){return Object.values(state.positions).filter(v=>v==="BOAT").length}
 
-boat.addEventListener("dragover",e=>{if(!state.moving)e.preventDefault()});
-boat.addEventListener("drop",e=>{
+const leftDockEl=$("#dock-left");
+const rightDockEl=$("#dock-right");
+
+const boatEl=$("#boat");
+boatEl.addEventListener("dragover",e=>{if(!state.moving)e.preventDefault()});
+boatEl.addEventListener("drop",e=>{
   if(state.moving)return;
   e.preventDefault();
   const name=e.dataTransfer.getData("text/plain"); if(!name)return;
@@ -296,13 +313,14 @@ boat.addEventListener("drop",e=>{
   state.positions[name]=(state.positions[name]==="BOAT")?state.boatSide:"BOAT";
   render();
 });
-[leftDock,rightDock].forEach(dock=>{
+
+[leftDockEl,rightDockEl].forEach(dock=>{
   dock.addEventListener("dragover",e=>{if(!state.moving)e.preventDefault()});
   dock.addEventListener("drop",e=>{
     if(state.moving)return;
     e.preventDefault();
     const name=e.dataTransfer.getData("text/plain"); if(!name)return;
-    const side=(dock===leftDock)?"L":"R";
+    const side=(dock===leftDockEl)?"L":"R";
     if(state.positions[name]==="BOAT"&&state.boatSide===side){
       state.positions[name]=side; render();
     }
